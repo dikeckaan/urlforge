@@ -123,6 +123,13 @@ a { color: var(--accent-text); }
   background: var(--ok-soft); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
   color: var(--ok); font-size: 12px; white-space: nowrap;
 }
+.badge-edition {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 4px 11px; border-radius: 999px; text-decoration: none; font-size: 12px;
+  background: var(--violet-soft); border: 1px solid color-mix(in srgb, var(--violet) 35%, transparent);
+  color: var(--violet);
+}
+.badge-edition:hover { background: color-mix(in srgb, var(--violet) 24%, transparent); color: var(--text); }
 .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: pulse 2.4s infinite; }
 @keyframes pulse { 70% { box-shadow: 0 0 0 6px rgba(63,185,80,0); } 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); } }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } * { transition: none !important; } }
@@ -311,6 +318,19 @@ tr.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .finding strong { font-weight: 600; }
 
 /* ---- 8. Reference ------------------------------------------------------- */
+.qrbox { display: grid; place-items: center; padding: 14px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.qrbox canvas { max-width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
+.qrbox canvas[hidden] { display: none; }
+input[type="file"] {
+  width: 100%; padding: 10px; cursor: pointer; font-size: 13px;
+  background: var(--bg-inset); color: var(--text-dim);
+  border: 1px dashed var(--border-strong); border-radius: var(--radius-sm);
+}
+input[type="file"]::file-selector-button {
+  margin-right: 10px; padding: 6px 11px; cursor: pointer; font: inherit;
+  background: var(--bg-elevated); color: var(--text-dim);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+}
 .ref-table td:first-child { font-family: var(--mono); font-size: 14px; color: var(--text); }
 .ref-table .enc { font-family: var(--mono); font-size: 12px; }
 .yes { color: var(--ok); }
@@ -465,6 +485,11 @@ footer a { color: var(--text-dim); }
   .topbar-actions::-webkit-scrollbar { display: none; }
   .topbar-actions > * { flex: none; }
 }
+/* ---- 10b. Touch and small screens -------------------------------------- */
+.tabs { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.tab { scroll-snap-align: center; }
+.pastebtn { display: none; }
+
 @media (max-width: 680px) {
   .grid-4 { grid-template-columns: minmax(0, 1fr); }
   /* Thirteen stacked cards would bury the workbench, so the picker drops to names only. */
@@ -473,10 +498,59 @@ footer a { color: var(--text-dim); }
   .scheme-grid strong { font-size: 11.5px; overflow-wrap: anywhere; }
   .scheme-grid button { padding: 7px 8px; }
   .badge-offline span:not(.pulse) { display: none; }
-  .badge-offline { padding: 6px; }
-  main { padding: 14px 10px 50px; }
+  .badge-offline { padding: 8px; }
+  main {
+    padding: 14px max(10px, env(safe-area-inset-right)) calc(50px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  }
+  footer { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
   .kv { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .kv dt { padding-bottom: 0; }
+
+  /* 16px keeps iOS from zooming the page every time a field is focused. */
+  input[type="text"], input[type="number"], select, textarea { font-size: 16px; padding: 11px 12px; }
+  td input[type="text"] { font-size: 16px; padding: 9px 10px; }
+  .btn { min-height: 42px; padding: 10px 14px; }
+  .btn-sm { min-height: 38px; padding: 8px 13px; font-size: 13px; }
+  .btn-icon { min-width: 42px; padding: 8px; }
+  .seg button { min-height: 40px; padding: 9px 13px; font-size: 13px; }
+  .check { min-height: 40px; padding: 4px 0; }
+  .check input { width: 19px; height: 19px; }
+  .tab { padding: 14px 14px 12px; font-size: 14px; }
+  .panel-head { padding: 12px 13px; gap: 8px; }
+  .panel-body { padding: 13px; }
+  .choice button { flex: 1 1 100%; min-height: 52px; }
+
+  /* Wide tables become a stack of labelled rows instead of a scroll race. */
+  table.stack thead { display: none; }
+  table.stack tbody tr { display: block; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  table.stack tbody tr:last-child { border-bottom: 0; }
+  table.stack tbody td { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 4px 10px; border: 0; padding: 4px 13px; align-items: center; }
+  table.stack tbody td::before { content: attr(data-label); grid-column: 1; grid-row: 1; color: var(--text-muted); font-size: 11.5px; }
+  table.stack tbody td > * { grid-column: 2; justify-self: start; }
+  table.stack tbody td > input { justify-self: stretch; }
+  table.stack tbody td:empty { display: none; }
+  table.stack tbody td.act { grid-template-columns: minmax(0, 1fr); padding-top: 2px; }
+  table.stack tbody td.act::before { content: none; }
+  table.stack tbody td.act > * { grid-column: 1; justify-self: end; }
+  table.stack tbody tr.empty-row td { display: block; text-align: center; }
+  table.stack tbody tr.empty-row td::before { content: none; }
+  .drag-handle { display: none; }
+
+  /* The reference table keeps its scroll, but sheds the columns you can infer. */
+  .ref-table th:nth-child(3), .ref-table td:nth-child(3),
+  .ref-table th:nth-child(6), .ref-table td:nth-child(6),
+  .ref-table th:nth-child(7), .ref-table td:nth-child(7) { display: none; }
+
+  .task-head h1 { font-size: 19px; }
+  .taskbar { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 6px 0; margin-bottom: -2px; }
+  .io textarea, .io-out { min-height: 150px; }
+  .charmap { max-height: 210px; }
+  .snippet, .result { font-size: 12px; }
+}
+
+/* A clipboard button earns its place only where there is no keyboard. */
+@media (hover: none) and (pointer: coarse) {
+  .pastebtn { display: inline-flex; align-items: center; }
 }
 </style>
 </head>
@@ -512,6 +586,12 @@ footer a { color: var(--text-dim); }
       <button type="button" data-mode-set="simple" aria-pressed="true" data-i18n="mode.simple">Simple</button>
       <button type="button" data-mode-set="expert" aria-pressed="false" data-i18n="mode.expert">Expert</button>
     </div>
+    <a class="badge-edition" id="edition-link" href="https://kaandikec.com/urlforge/"
+       target="_blank" rel="noopener noreferrer" data-i18n-title="offline.tip" hidden>
+      <span data-i18n="offline.edition">Offline edition</span> ↗
+    </a>
+    <button type="button" class="btn btn-sm" id="btn-download" data-i18n-title="download.tip"
+            data-i18n="btn.download" title="Save this whole page as one file">Download</button>
     <button type="button" class="btn btn-sm" id="btn-share" data-i18n-title="share.tip" data-i18n="btn.share"
             title="Copy a link that restores this workspace">Copy workspace link</button>
     <div class="seg" role="group" aria-label="Language">
@@ -553,6 +633,10 @@ footer a { color: var(--text-dim); }
   </div>
   <div class="startpaste">
     <label class="field-label" for="start-paste" data-i18n="start.paste">Or paste anything here and urlforge picks the job</label>
+    <div class="resultbar" style="margin:0">
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm pastebtn" id="btn-start-paste" data-i18n="btn.paste">Paste</button>
+    </div>
     <textarea id="start-paste" rows="2" spellcheck="false" autocapitalize="off" autocorrect="off"
       data-i18n-ph="start.pastePh" placeholder="a URL, an encoded value, Base64, a JWT, a curl command…"></textarea>
     <div id="start-route"></div>
@@ -705,7 +789,7 @@ footer a { color: var(--text-dim); }
     </div>
     <div class="panel-body tight">
       <div class="tablewrap">
-        <table>
+        <table class="stack">
           <thead><tr>
             <th style="width:28px"></th>
             <th style="width:24%" data-i18n="insp.th.name">Name</th>
@@ -725,7 +809,7 @@ footer a { color: var(--text-dim); }
       <div class="panel-head"><h3 data-i18n="insp.segments">Path segments</h3></div>
       <div class="panel-body tight">
         <div class="tablewrap">
-          <table>
+          <table class="stack">
             <thead><tr>
               <th style="width:42px">#</th>
               <th style="width:40%" data-i18n="insp.th.raw">Raw</th>
@@ -818,7 +902,7 @@ footer a { color: var(--text-dim); }
             <button type="button" class="btn btn-sm" id="btn-h-add" data-i18n="req.addHeader">Add header</button>
           </div>
           <div class="panel tablewrap" style="max-height:240px">
-            <table><tbody id="h-rows"></tbody></table>
+            <table class="stack"><tbody id="h-rows"></tbody></table>
           </div>
         </div>
         <div>
@@ -1039,7 +1123,7 @@ footer a { color: var(--text-dim); }
     <div class="panel-head"><h3 data-i18n="shp.dialects">The same data, as each framework writes it</h3></div>
     <div class="panel-body tight">
       <div class="tablewrap">
-        <table>
+        <table class="stack">
           <thead><tr>
             <th style="width:210px" data-i18n="shp.th.dialect">Framework</th>
             <th data-i18n="shp.th.query">Query string</th>
@@ -1218,6 +1302,41 @@ footer a { color: var(--text-dim); }
   <div class="grid-2">
     <section class="panel">
       <div class="panel-head">
+        <h3 data-i18n="qr.make">Turn a URL into a QR code</h3>
+        <div class="spacer"></div>
+        <label class="check"><input type="checkbox" id="qr-dark"><span data-i18n="qr.invert">Dark</span></label>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-qr-png" data-i18n="qr.png">Save PNG</button>
+      </div>
+      <div class="panel-body">
+        <label class="field"><span class="field-label" data-i18n="qr.text">Text or URL</span>
+          <textarea id="qr-in" rows="3" spellcheck="false" placeholder="https://kaandikec.com/urlforge/"></textarea></label>
+        <div class="qrbox"><canvas id="qr-canvas" aria-label="QR code"></canvas></div>
+        <div id="qr-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="qr.read">Read a QR code</h3>
+        <div class="spacer"></div>
+        <span class="chip" id="qr-support">—</span>
+      </div>
+      <div class="panel-body">
+        <p class="hint" data-i18n="qr.readHint">Pick a photo or a screenshot. On a phone this opens the camera, so you can point it at a code and see where it actually leads.</p>
+        <input type="file" id="qr-file" accept="image/*" capture="environment">
+        <div id="qr-read-status"></div>
+        <pre class="result" id="qr-read-out" data-empty="—"></pre>
+        <div class="row" id="qr-read-actions" hidden>
+          <button type="button" class="btn btn-sm" id="btn-qr-inspect" data-i18n="qr.inspect">Take it apart</button>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-qr-copy" data-i18n="btn.copy">Copy</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
         <h3 data-i18n="cv.gen">Generators</h3>
         <div class="spacer"></div>
         <button type="button" class="btn btn-sm" id="btn-gen" data-i18n="cv.regen">Generate again</button>
@@ -1301,6 +1420,7 @@ footer a { color: var(--text-dim); }
   <div class="panel-body">
     <p data-i18n="privacy.p1">Nowhere. Every conversion on this page is plain JavaScript running inside your tab. The page loads no scripts, styles, fonts or images from anywhere else, and makes no network requests while you use it.</p>
     <p data-i18n="privacy.p2">Only two things are stored, both in this browser's local storage and only on this device: your language and theme choice, and nothing else. Clearing site data removes them.</p>
+    <p data-i18n="privacy.p4">One exception, and only when you ask for it: “Download” re-reads this page’s own file from where it was served, so it can hand you a copy.</p>
     <p data-i18n="privacy.p3">“Copy workspace link” puts your current input into the link's fragment. Fragments are never sent to a server, but anyone you send the link to can read it — so treat a shared link like the data it carries.</p>
   </div>
 </dialog>
@@ -1510,6 +1630,30 @@ en: {
   'tab.request': 'Request forge', 'tab.convert': 'Convert', 'tab.reference': 'Reference',
   'tab.shapes': 'Shapes', 'tab.sign': 'Sign', 'tab.http': 'HTTP',
   'btn.clear': 'Clear', 'btn.copy': 'Copy', 'btn.copyOut': 'Copy output', 'btn.close': 'Close',
+  'qr.make': 'Turn a URL into a QR code', 'qr.text': 'Text or URL',
+  'qr.invert': 'Dark', 'qr.png': 'Save PNG',
+  'qr.built': 'Version {0}, {1}\u00d7{2} modules, holding {3} bytes.',
+  'qr.tooLong': 'Too long for a QR code, even at version 40.',
+  'qr.saved': 'Saved as qr.png',
+  'qr.read': 'Read a QR code',
+  'qr.readHint': 'Pick a photo or a screenshot. On a phone this opens the camera, so you can point it at a code and see where it actually leads.',
+  'qr.supported': 'reader ready', 'qr.unsupported': 'no reader in this browser',
+  'qr.noDetector': 'This browser has no built-in barcode reader. Chrome on Android and desktop Chrome do; Safari and Firefox do not yet.',
+  'qr.reading': 'Looking\u2026', 'qr.notFound': 'No QR code found in that image.',
+  'qr.foundUrl': 'Found a URL. Take it apart to see where it really goes.',
+  'qr.foundText': 'Found text, not a URL.',
+  'qr.readFailed': 'That image could not be read: {0}',
+  'qr.inspect': 'Take it apart', 'qr.useIt': 'Check where it goes',
+  'task.qr.n': 'QR codes, both ways',
+  'task.qr.d': 'Make one from a URL, or read one from a photo and see where it really points before you trust it.',
+  'btn.paste': 'Paste', 'btn.download': 'Download',
+  'download.tip': 'Save this whole page as one file you can open with no network at all',
+  'offline.edition': 'Offline edition', 'offline.tip': 'This is a saved copy. Open the live version.',
+  'toast.downloaded': 'Saved as urlforge-offline.html',
+  'toast.downloadFailed': 'The page could not be saved. Use your browser’s own Save Page instead.',
+  'privacy.p4': 'One exception, and only when you ask for it: “Download” re-reads this page’s own file from where it was served, so it can hand you a copy. It fetches nothing else, and a saved copy fetches nothing at all.',
+  'toast.pasteFailed': 'The browser would not hand over the clipboard.',
+  'toast.clipboardEmpty': 'The clipboard is empty.',
   'btn.remove': 'Remove',
   'toast.copied': 'Copied', 'toast.copyFailed': 'The browser refused to copy. Select the text instead.',
   'toast.nothing': 'Nothing to copy yet', 'toast.linkCopied': 'Workspace link copied',
@@ -1850,6 +1994,30 @@ tr: {
   'tab.request': 'İstek kur', 'tab.convert': 'Dönüştür', 'tab.reference': 'Başvuru',
   'tab.shapes': 'Dizilim', 'tab.sign': 'İmza', 'tab.http': 'HTTP',
   'btn.clear': 'Temizle', 'btn.copy': 'Kopyala', 'btn.copyOut': 'Çıktıyı kopyala', 'btn.close': 'Kapat',
+  'qr.make': 'Bir adresten QR üret', 'qr.text': 'Metin ya da adres',
+  'qr.invert': 'Koyu', 'qr.png': 'PNG kaydet',
+  'qr.built': 'Sürüm {0}, {1}\u00d7{2} modül, {3} bayt taşıyor.',
+  'qr.tooLong': 'QR koda sığmayacak kadar uzun, sürüm 40’ta bile.',
+  'qr.saved': 'qr.png olarak kaydedildi',
+  'qr.read': 'QR kod oku',
+  'qr.readHint': 'Bir fotoğraf ya da ekran görüntüsü seçin. Telefonda kamerayı açar; kodu gösterip gerçekte nereye götürdüğünü görebilirsiniz.',
+  'qr.supported': 'okuyucu hazır', 'qr.unsupported': 'bu tarayıcıda okuyucu yok',
+  'qr.noDetector': 'Bu tarayıcıda yerleşik barkod okuyucu yok. Android’de ve masaüstünde Chrome destekler; Safari ve Firefox henüz desteklemiyor.',
+  'qr.reading': 'Bakılıyor…', 'qr.notFound': 'Bu görselde QR kod bulunamadı.',
+  'qr.foundUrl': 'Bir adres bulundu. Gerçekte nereye gittiğini görmek için parçalarına ayırın.',
+  'qr.foundText': 'Metin bulundu, adres değil.',
+  'qr.readFailed': 'Bu görsel okunamadı: {0}',
+  'qr.inspect': 'Parçalarına ayır', 'qr.useIt': 'Nereye gidiyor bak',
+  'task.qr.n': 'QR kod — her iki yöne',
+  'task.qr.d': 'Bir adresten QR üretin, ya da fotoğraftan okuyup güvenmeden önce gerçekte nereyi gösterdiğini görün.',
+  'btn.paste': 'Yapıştır', 'btn.download': 'İndir',
+  'download.tip': 'Bu sayfanın tamamını tek dosya olarak kaydedin, ağ olmadan da açılsın',
+  'offline.edition': 'Çevrimdışı sürüm', 'offline.tip': 'Bu kaydedilmiş bir kopya. Canlı sürümü aç.',
+  'toast.downloaded': 'urlforge-offline.html olarak kaydedildi',
+  'toast.downloadFailed': 'Sayfa kaydedilemedi. Tarayıcınızın kendi Sayfayı Kaydet özelliğini kullanın.',
+  'privacy.p4': 'Tek istisna, o da siz isteyince: “İndir” bu sayfanın kendi dosyasını sunulduğu yerden yeniden okur, size bir kopya verebilmek için. Başka hiçbir şey çekmez; kaydedilmiş kopya ise hiçbir şey çekmez.',
+  'toast.pasteFailed': 'Tarayıcı panoyu vermedi.',
+  'toast.clipboardEmpty': 'Pano boş.',
   'btn.remove': 'Sil',
   'toast.copied': 'Kopyalandı', 'toast.copyFailed': 'Tarayıcı kopyalamayı reddetti. Metni seçerek kopyalayın.',
   'toast.nothing': 'Kopyalanacak bir şey yok', 'toast.linkCopied': 'Çalışma bağlantısı kopyalandı',
@@ -2699,28 +2867,29 @@ function renderQueryRows() {
 
     const tdH = el('td'); tdH.appendChild(el('span', 'drag-handle', '⠿')); tr.appendChild(tdH);
 
-    const tdN = el('td');
+    const tdN = el('td'); tdN.dataset.label = t('insp.th.name');
     const inN = el('input'); inN.type = 'text'; inN.value = p.name;
     inN.addEventListener('input', () => { p.name = inN.value; onQueryEdited(); });
     tdN.appendChild(inN); tr.appendChild(tdN);
 
-    const tdV = el('td');
+    const tdV = el('td'); tdV.dataset.label = t('insp.th.value');
     const inV = el('input'); inV.type = 'text'; inV.value = p.value;
     inV.addEventListener('input', () => { p.value = inV.value; p.hasEq = true; onQueryEdited(); });
     tdV.appendChild(inV); tr.appendChild(tdV);
 
-    const tdR = el('td', 'mono');
+    const tdR = el('td', 'mono'); tdR.dataset.label = t('insp.th.raw');
     tdR.textContent = p.hasEq ? p.rawName + '=' + p.rawValue : p.rawName;
     tdR.style.overflowWrap = 'anywhere';
     tr.appendChild(tdR);
 
-    const tdNo = el('td');
-    paramNotes(p, qParams).forEach(([k, cls]) => {
-      const c = el('span', 'chip ' + cls, t(k)); c.style.marginRight = '4px'; tdNo.appendChild(c);
-    });
+    const tdNo = el('td'); tdNo.dataset.label = t('insp.th.notes');
+    const chipWrap = el('div');
+    chipWrap.style.display = 'flex'; chipWrap.style.flexWrap = 'wrap'; chipWrap.style.gap = '4px';
+    paramNotes(p, qParams).forEach(([k, cls]) => chipWrap.appendChild(el('span', 'chip ' + cls, t(k))));
+    tdNo.appendChild(chipWrap);
     tr.appendChild(tdNo);
 
-    const tdX = el('td');
+    const tdX = el('td', 'act');
     const bx = el('button', 'btn btn-icon btn-sm', '✕');
     bx.type = 'button'; bx.title = t('btn.remove');
     bx.addEventListener('click', () => { qParams.splice(idx, 1); onQueryEdited(true); });
@@ -2910,10 +3079,11 @@ function runInspect(o) {
     tr.appendChild(td); segTb.appendChild(tr);
   } else segs.forEach((s, i) => {
     const tr = el('tr');
-    tr.appendChild(el('td', 'mono', String(i + 1)));
-    tr.appendChild(el('td', 'mono', s));
+    const c1 = el('td', 'mono', String(i + 1)); c1.dataset.label = '#';
+    const c2 = el('td', 'mono', s); c2.dataset.label = t('insp.th.raw');
     const d = pctDecode(s, { plus: false, lossy: true });
-    tr.appendChild(el('td', 'mono', d.ok ? d.value : s));
+    const c3 = el('td', 'mono', d.ok ? d.value : s); c3.dataset.label = t('insp.th.decoded');
+    tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3);
     segTb.appendChild(tr);
   });
 
@@ -3094,17 +3264,17 @@ function renderHeaderRows() {
   }
   reqHeaders.forEach((h, i) => {
     const tr = el('tr');
-    const tdN = el('td'); tdN.style.width = '36%';
+    const tdN = el('td'); tdN.style.width = '36%'; tdN.dataset.label = t('req.hName');
     const inN = el('input'); inN.type = 'text'; inN.value = h.name; inN.placeholder = t('req.hName');
     inN.addEventListener('input', () => { h.name = inN.value; renderSnippet(); });
     tdN.appendChild(inN); tr.appendChild(tdN);
 
-    const tdV = el('td');
+    const tdV = el('td'); tdV.dataset.label = t('req.hValue');
     const inV = el('input'); inV.type = 'text'; inV.value = h.value; inV.placeholder = t('req.hValue');
     inV.addEventListener('input', () => { h.value = inV.value; renderSnippet(); });
     tdV.appendChild(inV); tr.appendChild(tdV);
 
-    const tdX = el('td'); tdX.style.width = '34px';
+    const tdX = el('td', 'act'); tdX.style.width = '34px';
     const bx = el('button', 'btn btn-icon btn-sm', '✕'); bx.type = 'button'; bx.title = t('btn.remove');
     bx.addEventListener('click', () => { reqHeaders.splice(i, 1); renderHeaderRows(); renderSnippet(); });
     tdX.appendChild(bx); tr.appendChild(tdX);
@@ -3606,6 +3776,10 @@ function showTab(name) {
     $('#view-' + id).hidden = (id !== name) || appMode !== 'expert';
     $('#tab-' + id).setAttribute('aria-selected', String(id === name));
   });
+  if (appMode === 'expert') {
+    const btn = $('#tab-' + name);
+    if (btn && btn.scrollIntoView) btn.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
   if (name === 'reference' && appMode === 'expert') buildReference();
 }
 
@@ -3685,6 +3859,7 @@ function bind() {
   $('#btn-privacy').addEventListener('click', () => $('#dlg-privacy').showModal());
   $('#btn-shortcuts').addEventListener('click', () => $('#dlg-shortcuts').showModal());
   $$('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+  $('#btn-download').addEventListener('click', downloadCopy);
   $('#btn-share').addEventListener('click', async () => {
     const hash = '#s=' + encodeState();
     const link = location.href.split('#')[0] + hash;
@@ -3814,6 +3989,17 @@ function bind() {
   $('#btn-gen').addEventListener('click', cvGenerate);
   $('#cv-slug-in').addEventListener('input', () => { $('#cv-slug-out').textContent = slugify($('#cv-slug-in').value); });
   $('#cv-jwt').addEventListener('input', cvJwt);
+  $('#qr-in').addEventListener('input', runQr);
+  $('#qr-dark').addEventListener('change', runQr);
+  $('#btn-qr-png').addEventListener('click', saveQrPng);
+  $('#qr-file').addEventListener('change', e => readQrFile(e.target.files && e.target.files[0]));
+  $('#btn-qr-copy').addEventListener('click', () => copy(qrReadValue));
+  $('#btn-qr-inspect').addEventListener('click', () => {
+    if (!qrReadValue) return;
+    showMode('expert'); showTab('inspect');
+    $('#insp-in').value = qrReadValue;
+    runInspect();
+  });
 
   /* sign */
   ['#sig-url', '#sig-region', '#sig-service', '#sig-akid', '#sig-secret', '#sig-token',
@@ -3879,6 +4065,10 @@ function bind() {
   });
 
   /* start screen paste box and recents */
+  $('#btn-start-paste').addEventListener('click', async () => {
+    await pasteInto($('#start-paste'));
+    setTimeout(() => runStartPaste(true), 0);
+  });
   $('#start-paste').addEventListener('input', () => runStartPaste(false));
   $('#start-paste').addEventListener('paste', () => setTimeout(() => runStartPaste(true), 0));
 
@@ -4251,11 +4441,12 @@ function runShapes() {
   DIALECTS.forEach(d => {
     const q = shapeQuery(obj, d, decoded);
     const tr = el('tr');
-    tr.appendChild(el('td', null, d.label));
-    const td = el('td', 'mono', q);
+    const tdL = el('td', null, d.label); tdL.dataset.label = t('shp.th.dialect');
+    tr.appendChild(tdL);
+    const td = el('td', 'mono', q); td.dataset.label = t('shp.th.query');
     td.style.overflowWrap = 'anywhere';
     tr.appendChild(td);
-    const tdc = el('td');
+    const tdc = el('td', 'act');
     const b = el('button', 'btn btn-sm', t('btn.copy')); b.type = 'button';
     b.addEventListener('click', () => copy(q));
     tdc.appendChild(b); tr.appendChild(tdc);
@@ -4520,6 +4711,369 @@ function runCookies() {
 }
 
 /* ======================================================================
+   10e. QR codes — a byte-mode encoder, and the browser's own decoder
+   ====================================================================== */
+const QR = (function () {
+  /* Error-correction level M throughout: the usual default, and dense enough for URLs. */
+  const ECC_PER_BLOCK = [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26,
+    26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28];
+  const NUM_BLOCKS = [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16,
+    17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49];
+  const ECC_FORMAT_BITS = 0; /* level M */
+
+  function rawDataModules(ver) {
+    let result = (16 * ver + 128) * ver + 64;
+    if (ver >= 2) {
+      const numAlign = Math.floor(ver / 7) + 2;
+      result -= (25 * numAlign - 10) * numAlign - 55;
+      if (ver >= 7) result -= 36;
+    }
+    return result;
+  }
+  const totalCodewords = ver => Math.floor(rawDataModules(ver) / 8);
+  const dataCodewords = ver => totalCodewords(ver) - ECC_PER_BLOCK[ver] * NUM_BLOCKS[ver];
+
+  function alignPositions(ver) {
+    if (ver === 1) return [];
+    const numAlign = Math.floor(ver / 7) + 2;
+    const step = (ver === 32) ? 26 : Math.ceil((ver * 4 + 4) / (numAlign * 2 - 2)) * 2;
+    const result = [6];
+    for (let pos = ver * 4 + 10; result.length < numAlign; pos -= step) result.splice(1, 0, pos);
+    return result;
+  }
+
+  /* GF(256) with the QR primitive polynomial 0x11D. */
+  function gfMul(x, y) {
+    let z = 0;
+    for (let i = 7; i >= 0; i--) {
+      z = (z << 1) ^ ((z >>> 7) * 0x11D);
+      z ^= ((y >>> i) & 1) * x;
+    }
+    return z & 0xFF;
+  }
+  function rsDivisor(degree) {
+    const result = new Uint8Array(degree);
+    result[degree - 1] = 1;
+    let root = 1;
+    for (let i = 0; i < degree; i++) {
+      for (let j = 0; j < degree; j++) {
+        result[j] = gfMul(result[j], root);
+        if (j + 1 < degree) result[j] ^= result[j + 1];
+      }
+      root = gfMul(root, 0x02);
+    }
+    return result;
+  }
+  function rsRemainder(data, divisor) {
+    const result = new Uint8Array(divisor.length);
+    for (let i = 0; i < data.length; i++) {
+      const factor = data[i] ^ result[0];
+      result.copyWithin(0, 1);
+      result[result.length - 1] = 0;
+      for (let j = 0; j < divisor.length; j++) result[j] ^= gfMul(divisor[j], factor);
+    }
+    return result;
+  }
+
+  function buildBitstream(bytes, ver) {
+    const bits = [];
+    const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+    push(0b0100, 4);                                  /* byte mode */
+    push(bytes.length, ver <= 9 ? 8 : 16);            /* character count */
+    for (let i = 0; i < bytes.length; i++) push(bytes[i], 8);
+
+    const capacityBits = dataCodewords(ver) * 8;
+    push(0, Math.min(4, capacityBits - bits.length)); /* terminator */
+    push(0, (8 - bits.length % 8) % 8);               /* pad to a byte */
+    for (let pad = 0xEC; bits.length < capacityBits; pad ^= 0xEC ^ 0x11) push(pad, 8);
+
+    const out = new Uint8Array(bits.length / 8);
+    bits.forEach((b, i) => { out[i >>> 3] |= b << (7 - (i & 7)); });
+    return out;
+  }
+
+  /* Split into blocks, add error correction, interleave. */
+  function addEcc(data, ver) {
+    const numBlocks = NUM_BLOCKS[ver];
+    const eccLen = ECC_PER_BLOCK[ver];
+    const rawLen = totalCodewords(ver);
+    const numShort = numBlocks - rawLen % numBlocks;
+    const shortLen = Math.floor(rawLen / numBlocks);
+
+    const blocks = [];
+    const divisor = rsDivisor(eccLen);
+    for (let i = 0, k = 0; i < numBlocks; i++) {
+      const len = shortLen - eccLen + (i < numShort ? 0 : 1);
+      const dat = data.slice(k, k + len);
+      k += len;
+      /* Every block is padded to the same length with a placeholder the
+         interleaver skips, so the columns below line up. */
+      const block = new Uint8Array(shortLen + 1);
+      block.set(dat, 0);
+      block.set(rsRemainder(dat, divisor), len + (i < numShort ? 1 : 0));
+      blocks.push(block);
+    }
+    const result = new Uint8Array(rawLen);
+    let idx = 0;
+    for (let i = 0; i < blocks[0].length; i++) {
+      for (let j = 0; j < blocks.length; j++) {
+        /* The short blocks have no data codeword in the last data column. */
+        if (i !== shortLen - eccLen || j >= numShort) result[idx++] = blocks[j][i];
+      }
+    }
+    return result;
+  }
+
+  function newGrid(size, fill) {
+    const g = [];
+    for (let i = 0; i < size; i++) g.push(new Array(size).fill(fill));
+    return g;
+  }
+
+  function drawFunctionPatterns(modules, isFunction, ver, size) {
+    const setFn = (x, y, dark) => {
+      if (x < 0 || y < 0 || x >= size || y >= size) return;
+      modules[y][x] = dark; isFunction[y][x] = true;
+    };
+    /* timing */
+    for (let i = 0; i < size; i++) { setFn(6, i, i % 2 === 0); setFn(i, 6, i % 2 === 0); }
+    /* finders with separators */
+    [[3, 3], [size - 4, 3], [3, size - 4]].forEach(c => {
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        setFn(c[0] + dx, c[1] + dy, dist !== 2 && dist !== 4);
+      }
+    });
+    /* alignment */
+    const pos = alignPositions(ver);
+    for (let i = 0; i < pos.length; i++) for (let j = 0; j < pos.length; j++) {
+      if ((i === 0 && j === 0) || (i === 0 && j === pos.length - 1) || (i === pos.length - 1 && j === 0)) continue;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        setFn(pos[j] + dx, pos[i] + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+      }
+    }
+    /* format area is reserved now and filled once the mask is chosen */
+    for (let i = 0; i <= 8; i++) { setFn(i, 8, false); setFn(8, i, false); }
+    for (let i = 0; i < 8; i++) { setFn(size - 1 - i, 8, false); setFn(8, size - 1 - i, false); }
+    setFn(8, size - 8, true); /* the always-dark module */
+
+    if (ver >= 7) {
+      let rem = ver;
+      for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1F25);
+      const bits = ver << 12 | rem;
+      for (let i = 0; i < 18; i++) {
+        const bit = ((bits >>> i) & 1) === 1;
+        const a = size - 11 + i % 3, b = Math.floor(i / 3);
+        setFn(a, b, bit); setFn(b, a, bit);
+      }
+    }
+  }
+
+  function drawFormatBits(modules, isFunction, size, mask) {
+    const data = ECC_FORMAT_BITS << 3 | mask;
+    let rem = data;
+    for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    const bits = ((data << 10) | rem) ^ 0x5412;
+    const set = (x, y, dark) => { modules[y][x] = dark; isFunction[y][x] = true; };
+    for (let i = 0; i <= 5; i++) set(8, i, ((bits >>> i) & 1) === 1);
+    set(8, 7, ((bits >>> 6) & 1) === 1);
+    set(8, 8, ((bits >>> 7) & 1) === 1);
+    set(7, 8, ((bits >>> 8) & 1) === 1);
+    for (let i = 9; i < 15; i++) set(14 - i, 8, ((bits >>> i) & 1) === 1);
+    for (let i = 0; i < 8; i++) set(size - 1 - i, 8, ((bits >>> i) & 1) === 1);
+    for (let i = 8; i < 15; i++) set(8, size - 15 + i, ((bits >>> i) & 1) === 1);
+  }
+
+  function drawCodewords(modules, isFunction, size, data) {
+    let i = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < size; vert++) {
+        for (let j = 0; j < 2; j++) {
+          const x = right - j;
+          const upward = ((right + 1) & 2) === 0;
+          const y = upward ? size - 1 - vert : vert;
+          if (!isFunction[y][x] && i < data.length * 8) {
+            modules[y][x] = ((data[i >>> 3] >>> (7 - (i & 7))) & 1) !== 0;
+            i++;
+          }
+        }
+      }
+    }
+  }
+
+  const MASKS = [
+    (x, y) => (x + y) % 2 === 0,
+    (x, y) => y % 2 === 0,
+    (x, y) => x % 3 === 0,
+    (x, y) => (x + y) % 3 === 0,
+    (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0,
+    (x, y) => x * y % 2 + x * y % 3 === 0,
+    (x, y) => (x * y % 2 + x * y % 3) % 2 === 0,
+    (x, y) => ((x + y) % 2 + x * y % 3) % 2 === 0
+  ];
+  function applyMask(modules, isFunction, size, mask) {
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      if (!isFunction[y][x] && MASKS[mask](x, y)) modules[y][x] = !modules[y][x];
+    }
+  }
+  function penalty(modules, size) {
+    let result = 0;
+    const N1 = 3, N2 = 3, N3 = 40, N4 = 10;
+    for (let y = 0; y < size; y++) {
+      let runColor = false, runX = 0;
+      for (let x = 0; x < size; x++) {
+        if (modules[y][x] === runColor) { runX++; if (runX === 5) result += N1; else if (runX > 5) result++; }
+        else { runColor = modules[y][x]; runX = 1; }
+      }
+      result += finderScore(modules, y, size, true);
+    }
+    for (let x = 0; x < size; x++) {
+      let runColor = false, runY = 0;
+      for (let y = 0; y < size; y++) {
+        if (modules[y][x] === runColor) { runY++; if (runY === 5) result += N1; else if (runY > 5) result++; }
+        else { runColor = modules[y][x]; runY = 1; }
+      }
+      result += finderScore(modules, x, size, false);
+    }
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) {
+      const c = modules[y][x];
+      if (c === modules[y][x + 1] && c === modules[y + 1][x] && c === modules[y + 1][x + 1]) result += N2;
+    }
+    let dark = 0;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (modules[y][x]) dark++;
+    const total = size * size;
+    const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
+    result += k * N4;
+    return result;
+
+    function finderScore(m, line, n, horizontal) {
+      /* 1:1:3:1:1 pattern with four light modules on one side. */
+      let score = 0;
+      const at = i => horizontal ? m[line][i] : m[i][line];
+      for (let i = 0; i <= n - 7; i++) {
+        if (at(i) && !at(i + 1) && at(i + 2) && at(i + 3) && at(i + 4) && !at(i + 5) && at(i + 6)) {
+          const before = i - 4 >= 0 && !at(i - 1) && !at(i - 2) && !at(i - 3) && !at(i - 4);
+          const after = i + 10 < n && !at(i + 7) && !at(i + 8) && !at(i + 9) && !at(i + 10);
+          if (before || after) score += N3;
+        }
+      }
+      return score;
+    }
+  }
+
+  function encode(text) {
+    const bytes = TE.encode(String(text));
+    let ver = 1;
+    while (ver <= 40) {
+      const capacity = dataCodewords(ver) * 8 - 4 - (ver <= 9 ? 8 : 16);
+      if (bytes.length * 8 <= capacity) break;
+      ver++;
+    }
+    if (ver > 40) throw new Error('too-long');
+
+    const data = addEcc(buildBitstream(bytes, ver), ver);
+    const size = ver * 4 + 17;
+    const modules = newGrid(size, false);
+    const isFunction = newGrid(size, false);
+    drawFunctionPatterns(modules, isFunction, ver, size);
+    drawCodewords(modules, isFunction, size, data);
+
+    let best = -1, bestScore = Infinity, bestModules = null;
+    for (let mask = 0; mask < 8; mask++) {
+      const trial = modules.map(row => row.slice());
+      applyMask(trial, isFunction, size, mask);
+      drawFormatBits(trial, isFunction.map(r => r.slice()), size, mask);
+      const score = penalty(trial, size);
+      if (score < bestScore) { bestScore = score; best = mask; bestModules = trial; }
+    }
+    return { size: size, version: ver, mask: best, modules: bestModules };
+  }
+
+  return { encode: encode, capacityBytes: ver => dataCodewords(ver) - 2 };
+})();
+
+/* Scanners want dark modules on a light field; the inverted pair keeps that
+   relationship and only swaps which end of the scale each one sits at. */
+function drawQrToCanvas(canvas, qr, scale, quiet, dark) {
+  const q = quiet == null ? 4 : quiet;
+  const px = scale || 6;
+  const dim = (qr.size + q * 2) * px;
+  canvas.width = dim; canvas.height = dim;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = dark ? '#0d1117' : '#ffffff';
+  ctx.fillRect(0, 0, dim, dim);
+  ctx.fillStyle = dark ? '#e6edf3' : '#000000';
+  for (let y = 0; y < qr.size; y++) {
+    for (let x = 0; x < qr.size; x++) {
+      if (qr.modules[y][x]) ctx.fillRect((x + q) * px, (y + q) * px, px, px);
+    }
+  }
+}
+
+const HAS_BARCODE = typeof window.BarcodeDetector === 'function';
+async function detectQr(source) {
+  if (!HAS_BARCODE) throw new Error('unsupported');
+  const det = new window.BarcodeDetector({ formats: ['qr_code'] });
+  const found = await det.detect(source);
+  return found.length ? found[0].rawValue : null;
+}
+
+let qrLast = null;
+function runQr() {
+  const st = $('#qr-status');
+  const canvas = $('#qr-canvas');
+  const v = $('#qr-in').value.trim();
+  if (!v) { canvas.hidden = true; qrLast = null; status(st, 'info', ''); return; }
+  try {
+    const qr = QR.encode(v);
+    qrLast = qr;
+    canvas.hidden = false;
+    drawQrToCanvas(canvas, qr, 6, 4, $('#qr-dark').checked);
+    status(st, 'ok', t('qr.built', qr.version, qr.size, qr.size, TE.encode(v).length));
+  } catch (e) {
+    canvas.hidden = true; qrLast = null;
+    status(st, 'danger', e.message === 'too-long' ? t('qr.tooLong') : e.message);
+  }
+}
+function saveQrPng() {
+  if (!qrLast) { toast(t('toast.nothing')); return; }
+  const big = el('canvas');
+  drawQrToCanvas(big, qrLast, 12, 4, $('#qr-dark').checked);
+  big.toBlob(blob => {
+    const a = el('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'qr.png';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast(t('qr.saved'));
+  }, 'image/png');
+}
+let qrReadValue = '';
+async function readQrFile(file) {
+  const st = $('#qr-read-status');
+  const out = $('#qr-read-out');
+  const actions = $('#qr-read-actions');
+  out.textContent = ''; actions.hidden = true; qrReadValue = '';
+  if (!file) return;
+  if (!HAS_BARCODE) { status(st, 'warn', t('qr.noDetector')); return; }
+  status(st, 'info', t('qr.reading'));
+  try {
+    const bmp = await createImageBitmap(file);
+    const value = await detectQr(bmp);
+    bmp.close && bmp.close();
+    if (!value) { status(st, 'warn', t('qr.notFound')); return; }
+    qrReadValue = value;
+    out.textContent = value;
+    actions.hidden = false;
+    const looksUrl = /^[a-z][a-z0-9+.-]*:/i.test(value);
+    status(st, 'ok', looksUrl ? t('qr.foundUrl') : t('qr.foundText'));
+  } catch (e) {
+    status(st, 'danger', t('qr.readFailed', e.message));
+  }
+}
+
+/* ======================================================================
    11. Simple mode — one job, one box, one answer
    ====================================================================== */
 let appMode = 'simple';
@@ -4536,6 +5090,7 @@ const ICON = {
   list:     ['M4 6.5h16M4 12h16M4 17.5h10'],
   clock:    ['M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 0 0 0-17.2Z', 'M12 7.6V12l3 1.9'],
   shield:   ['M12 3.2 4.8 6v5.6c0 4.3 3 8.2 7.2 9.2 4.2-1 7.2-4.9 7.2-9.2V6L12 3.2Z', 'M9.2 11.9l2 2 3.6-3.8'],
+  qr:       ['M4.5 4.5h5v5h-5zM14.5 4.5h5v5h-5zM4.5 14.5h5v5h-5z', 'M14.5 14.5h2v2h-2zM17.5 17.5h2v2h-2z'],
   globe:    ['M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 0 0 0-17.2Z', 'M3.6 12h16.8', 'M12 3.4c2.1 2.3 3.3 5.4 3.3 8.6s-1.2 6.3-3.3 8.6c-2.1-2.3-3.3-5.4-3.3-8.6s1.2-6.3 3.3-8.6Z']
 };
 function icon(paths, size) {
@@ -4553,14 +5108,30 @@ function icon(paths, size) {
 }
 
 /* ---- small builders shared by the jobs ---- */
+async function pasteInto(node) {
+  try {
+    const txt = await navigator.clipboard.readText();
+    if (!txt) { toast(t('toast.clipboardEmpty')); return; }
+    node.value = txt;
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  } catch (e) { toast(t('toast.pasteFailed')); }
+}
 function areaField(id, labelKey, phKey, rows) {
-  const wrap = el('label', 'field');
-  wrap.appendChild(el('span', 'field-label', t(labelKey)));
+  const wrap = el('div', 'field');
+  const head = el('div', 'resultbar');
+  const lab = el('label', 'field-label', t(labelKey));
+  lab.setAttribute('for', id);
+  head.appendChild(lab);
+  head.appendChild(el('div', 'spacer'));
   const ta = el('textarea');
   ta.id = id; ta.rows = rows || 3; ta.spellcheck = false;
   ta.setAttribute('autocapitalize', 'off'); ta.setAttribute('autocorrect', 'off');
   if (phKey) ta.placeholder = t(phKey);
-  wrap.appendChild(ta);
+  const pb = el('button', 'btn btn-sm pastebtn', t('btn.paste'));
+  pb.type = 'button';
+  pb.addEventListener('click', () => pasteInto(ta));
+  head.appendChild(pb);
+  wrap.appendChild(head); wrap.appendChild(ta);
   return { wrap: wrap, ta: ta };
 }
 function resultBlock(id, labelKey, getText) {
@@ -4674,7 +5245,7 @@ function buildParams(body) {
   const inp = areaField('t-par-in', 'task.input', 'task.params.ph', 2);
   const st = el('div');
   const tblWrap = el('div', 'panel tablewrap');
-  const tbl = el('table'); const tb = el('tbody');
+  const tbl = el('table', 'stack'); const tb = el('tbody');
   tbl.appendChild(tb); tblWrap.appendChild(tbl);
   const bar = el('div', 'row');
   const addBtn = el('button', 'btn btn-sm', t('task.params.add')); addBtn.type = 'button';
@@ -4700,15 +5271,15 @@ function buildParams(body) {
     }
     list.forEach((pp, i) => {
       const tr = el('tr');
-      const tdN = el('td'); tdN.style.width = '32%';
+      const tdN = el('td'); tdN.style.width = '32%'; tdN.dataset.label = t('insp.th.name');
       const inN = el('input'); inN.type = 'text'; inN.value = pp.name; inN.placeholder = t('insp.th.name');
       inN.addEventListener('input', () => { pp.name = inN.value; rebuild(); });
       tdN.appendChild(inN); tr.appendChild(tdN);
-      const tdV = el('td');
+      const tdV = el('td'); tdV.dataset.label = t('insp.th.value');
       const inV = el('input'); inV.type = 'text'; inV.value = pp.value; inV.placeholder = t('insp.th.value');
       inV.addEventListener('input', () => { pp.value = inV.value; pp.hasEq = true; rebuild(); });
       tdV.appendChild(inV); tr.appendChild(tdV);
-      const tdX = el('td'); tdX.style.width = '34px';
+      const tdX = el('td', 'act'); tdX.style.width = '34px';
       const bx = el('button', 'btn btn-icon btn-sm', '✕'); bx.type = 'button'; bx.title = t('btn.remove');
       bx.addEventListener('click', () => { list.splice(i, 1); rows(); rebuild(); });
       tdX.appendChild(bx); tr.appendChild(tdX);
@@ -5054,6 +5625,78 @@ function buildCorsJob(body) {
   };
 }
 
+/* ---- job: QR codes, both directions ---- */
+function buildQrJob(body) {
+  const inp = areaField('t-qr-in', 'qr.text', null, 2);
+  const box = el('div', 'qrbox');
+  const canvas = el('canvas'); canvas.setAttribute('aria-label', 'QR code');
+  box.appendChild(canvas);
+  const st = el('div');
+  const bar = el('div', 'row');
+  const png = el('button', 'btn btn-sm btn-primary', t('qr.png')); png.type = 'button';
+  bar.appendChild(el('div', 'spacer')); bar.appendChild(png);
+
+  const readLabel = el('span', 'field-label', t('qr.read'));
+  readLabel.style.marginTop = '8px';
+  const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.setAttribute('capture', 'environment');
+  const readSt = el('div');
+  const readOut = el('pre', 'result'); readOut.dataset.empty = '—';
+  const readBar = el('div', 'row'); readBar.hidden = true;
+  const useBtn = el('button', 'btn btn-sm', t('qr.useIt')); useBtn.type = 'button';
+  const copyBtn = el('button', 'btn btn-sm btn-primary', t('btn.copy')); copyBtn.type = 'button';
+  readBar.appendChild(useBtn); readBar.appendChild(copyBtn);
+
+  body.appendChild(inp.wrap); body.appendChild(box); body.appendChild(st); body.appendChild(bar);
+  body.appendChild(readLabel); body.appendChild(file);
+  body.appendChild(readSt); body.appendChild(readOut); body.appendChild(readBar);
+
+  let current = null, scanned = '';
+  const run = () => {
+    const v = inp.ta.value.trim();
+    if (!v) { canvas.hidden = true; current = null; status(st, 'info', ''); return; }
+    try {
+      current = QR.encode(v);
+      canvas.hidden = false;
+      drawQrToCanvas(canvas, current, 6, 4, false);
+      status(st, 'ok', t('qr.built', current.version, current.size, current.size, TE.encode(v).length));
+    } catch (e) {
+      canvas.hidden = true; current = null;
+      status(st, 'danger', e.message === 'too-long' ? t('qr.tooLong') : e.message);
+    }
+  };
+  inp.ta.addEventListener('input', run);
+  png.addEventListener('click', () => {
+    if (!current) { toast(t('toast.nothing')); return; }
+    const big = el('canvas');
+    drawQrToCanvas(big, current, 12, 4, false);
+    big.toBlob(blob => {
+      const a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'qr.png';
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      toast(t('qr.saved'));
+    }, 'image/png');
+  });
+  file.addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0];
+    readOut.textContent = ''; readBar.hidden = true; scanned = '';
+    if (!f) return;
+    if (!HAS_BARCODE) { status(readSt, 'warn', t('qr.noDetector')); return; }
+    status(readSt, 'info', t('qr.reading'));
+    try {
+      const bmp = await createImageBitmap(f);
+      const value = await detectQr(bmp);
+      if (bmp.close) bmp.close();
+      if (!value) { status(readSt, 'warn', t('qr.notFound')); return; }
+      scanned = value; readOut.textContent = value; readBar.hidden = false;
+      status(readSt, 'ok', /^[a-z][a-z0-9+.-]*:/i.test(value) ? t('qr.foundUrl') : t('qr.foundText'));
+    } catch (err) { status(readSt, 'danger', t('qr.readFailed', err.message)); }
+  });
+  useBtn.addEventListener('click', () => { if (scanned) openTask('check', scanned); });
+  copyBtn.addEventListener('click', () => copy(scanned));
+
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#qr-in', value: inp.ta.value }) };
+}
+
 const TASKS = [
   { id: 'read',   icon: ICON.eye,      build: buildRead,       full: 'inspect' },
   { id: 'encode', icon: ICON.lock,     build: buildEncode,     full: 'codec' },
@@ -5064,7 +5707,8 @@ const TASKS = [
   { id: 'batch',  icon: ICON.list,     build: buildBatchTask,  full: 'batch' },
   { id: 'utils',  icon: ICON.clock,    build: buildUtils,      full: 'convert' },
   { id: 'webhook', icon: ICON.shield,  build: buildWebhookJob, full: 'sign' },
-  { id: 'cors',   icon: ICON.globe,    build: buildCorsJob,    full: 'http' }
+  { id: 'cors',   icon: ICON.globe,    build: buildCorsJob,    full: 'http' },
+  { id: 'qr',     icon: ICON.qr,       build: buildQrJob,      full: 'convert' }
 ];
 
 function renderTaskMenu() {
@@ -5260,6 +5904,55 @@ function showMode(mode) {
   }
 }
 
+/* ======================================================================
+   12. Saving a copy of this page
+   ====================================================================== */
+const HOME_URL = 'https://kaandikec.com/urlforge/';
+
+/* Prefer the file as it was served; fall back to the live DOM offline. */
+async function pageSource() {
+  try {
+    const r = await fetch(location.href, { cache: 'no-store' });
+    if (r.ok) {
+      const txt = await r.text();
+      if (/<\/html>\s*$/i.test(txt.trim())) return txt;
+    }
+  } catch (e) {}
+  return '<!doctype html>\n' + document.documentElement.outerHTML + '\n';
+}
+
+/* Tag the root element so the saved copy knows what it is. */
+function markAsOffline(html) {
+  return html.replace(/<html\b([^>]*)>/i, (all, attrs) =>
+    '<html' + attrs.replace(/\s*data-edition="[^"]*"/i, '') + ' data-edition="offline">');
+}
+
+async function downloadCopy() {
+  const btn = $('#btn-download');
+  btn.disabled = true;
+  try {
+    const html = markAsOffline(await pageSource());
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = el('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'urlforge-offline.html';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast(t('toast.downloaded'));
+  } catch (e) {
+    toast(t('toast.downloadFailed'));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function applyEdition() {
+  const offline = document.documentElement.dataset.edition === 'offline';
+  $('#edition-link').hidden = !offline;
+  $('#btn-download').hidden = offline;
+  if (offline) $('#edition-link').href = HOME_URL;
+}
+
 /* ---- init ---- */
 function init() {
   let savedTheme = 'system', savedLang = null, savedMode = 'simple';
@@ -5275,6 +5968,7 @@ function init() {
   });
 
   bind();
+  applyEdition();
   renderTaskMenu();
   buildSchemeGrid();
   buildBatchOps();
@@ -5292,6 +5986,10 @@ function init() {
 
   runCodec(); runInspect(); renderSnippet(); buildOAuthUrl();
   runOasTable(); runSigV4(); renderRecents();
+  $('#qr-support').textContent = HAS_BARCODE ? t('qr.supported') : t('qr.unsupported');
+  $('#qr-support').className = 'chip ' + (HAS_BARCODE ? 'chip-ok' : 'chip-warn');
+  $('#qr-in').value = HOME_URL;
+  runQr();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
