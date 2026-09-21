@@ -1141,10 +1141,101 @@ footer a { color: var(--text-dim); }
       <dl class="kv" id="wh-detail" style="grid-template-columns:168px minmax(0,1fr)"></dl>
     </div>
   </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="sas.title">Azure Blob shared access signature</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-sas-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-sas-copy" data-i18n="btn.copy">Copy</button>
+    </div>
+    <div class="panel-body">
+      <div class="grid-4">
+        <label class="field"><span class="field-label" data-i18n="sas.account">Account</span><input type="text" id="sas-account" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sas.container">Container</span><input type="text" id="sas-container" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sas.blob">Blob (optional)</span><input type="text" id="sas-blob" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sas.perms">Permissions</span><input type="text" id="sas-perms" value="r" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sas.start">Starts (UTC)</span><input type="text" id="sas-start" spellcheck="false" placeholder="2026-09-21T00:00:00Z"></label>
+        <label class="field"><span class="field-label" data-i18n="sas.expiry">Expires (UTC)</span><input type="text" id="sas-expiry" spellcheck="false" placeholder="2026-09-22T00:00:00Z"></label>
+        <label class="field"><span class="field-label">Protocol</span>
+          <select id="sas-protocol"><option value="https">https</option><option value="https,http">https,http</option></select></label>
+        <label class="field"><span class="field-label" data-i18n="sas.version">Service version</span><input type="text" id="sas-version" value="2022-11-02" spellcheck="false"></label>
+      </div>
+      <label class="field"><span class="field-label" data-i18n="sas.key">Account key (Base64)</span><input type="text" id="sas-key" spellcheck="false"></label>
+      <div id="sas-status"></div>
+      <span class="field-label" data-i18n="sig.sts">String to sign</span>
+      <pre class="snippet" id="sas-sts" style="max-height:200px"></pre>
+      <span class="field-label" data-i18n="sas.url">Signed URL</span>
+      <pre class="io-out" id="sas-out" style="min-height:0" data-empty="—"></pre>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h3 data-i18n="sas.read">Read a SAS URL someone handed you</h3></div>
+    <div class="panel-body">
+      <textarea id="sas-parse" rows="3" spellcheck="false"
+        placeholder="https://acct.blob.core.windows.net/c/b.txt?sv=2022-11-02&amp;sr=b&amp;sp=r&amp;se=...&amp;sig=..."></textarea>
+      <div id="sas-parse-status"></div>
+      <dl class="kv" id="sas-parse-out" style="grid-template-columns:210px minmax(0,1fr)"></dl>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="gcs.title">Google Cloud Storage V4 signed URL</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-gcs-key" data-i18n="gcs.testKey">Make a test key</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-gcs-copy" data-i18n="btn.copy">Copy</button>
+    </div>
+    <div class="panel-body">
+      <div class="grid-4">
+        <label class="field"><span class="field-label" data-i18n="gcs.bucket">Bucket</span><input type="text" id="gcs-bucket" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="gcs.object">Object</span><input type="text" id="gcs-object" spellcheck="false"></label>
+        <label class="field"><span class="field-label">Method</span>
+          <select id="gcs-method"><option>GET</option><option>PUT</option><option>POST</option><option>DELETE</option></select></label>
+        <label class="field"><span class="field-label" data-i18n="sig.expires">Expires (seconds)</span><input type="text" id="gcs-expires" value="3600" spellcheck="false"></label>
+      </div>
+      <label class="field"><span class="field-label" data-i18n="gcs.email">Service account e-mail</span><input type="text" id="gcs-email" spellcheck="false" placeholder="signer@project.iam.gserviceaccount.com"></label>
+      <label class="field"><span class="field-label" data-i18n="gcs.key">Private key (PKCS#8 PEM, from the service-account JSON)</span>
+        <textarea id="gcs-key" rows="4" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIEv...&#10;-----END PRIVATE KEY-----"></textarea></label>
+      <div id="gcs-status"></div>
+      <span class="field-label" data-i18n="sig.canonical">Canonical request</span>
+      <pre class="snippet" id="gcs-canonical" style="max-height:190px"></pre>
+      <span class="field-label" data-i18n="gcs.url">Signed URL</span>
+      <pre class="io-out" id="gcs-out" style="min-height:0" data-empty="—"></pre>
+    </div>
+  </section>
 </div>
 
 <!-- =============================== Shapes ================================= -->
 <div class="view" id="view-shapes" role="tabpanel" aria-labelledby="tab-shapes" hidden>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="tpl.title">URL templates (RFC 6570)</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-tpl-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-tpl-copy" data-i18n="btn.copy">Copy</button>
+    </div>
+    <div class="panel-body">
+      <p class="lede" data-i18n="tpl.lede">The notation OpenAPI and the GitHub API hand you: <code>{id}</code>, <code>{/path*}</code>, <code>{?q,page}</code>. Fill it in below, or paste a finished URL at the bottom to get the values back out.</p>
+      <div class="grid-2">
+        <label class="field"><span class="field-label" data-i18n="tpl.template">Template</span>
+          <textarea id="tpl-in" rows="3" spellcheck="false"
+            placeholder="https://api.example.com/repos{/owner,repo}/issues{?state,labels*,page}"></textarea></label>
+        <label class="field"><span class="field-label" data-i18n="tpl.vars">Values</span>
+          <textarea id="tpl-vars" rows="6" spellcheck="false"
+            placeholder='{ "owner": "dikeckaan", "repo": "urlforge", "state": "open" }'></textarea></label>
+      </div>
+      <div class="row" id="tpl-needs"></div>
+      <span class="field-label" data-i18n="tpl.result">Expanded</span>
+      <pre class="io-out" id="tpl-out" style="min-height:0" data-empty="—"></pre>
+      <div id="tpl-status"></div>
+      <label class="field"><span class="field-label" data-i18n="tpl.match">Or paste a finished URL and get the values back</span>
+        <input type="text" id="tpl-url" spellcheck="false" placeholder="https://api.example.com/repos/dikeckaan/urlforge/issues?state=open"></label>
+      <div id="tpl-match"></div>
+    </div>
+  </section>
+
   <section class="panel">
     <div class="panel-head">
       <h2 data-i18n="shp.title">The data</h2>
@@ -1788,6 +1879,51 @@ en: {
   'har.creds': 'credentials', 'har.secret': 'secret in query', 'har.double': 'double-encoded',
   'har.space': 'literal space', 'har.plain': 'plain http', 'har.mixed': 'mixed scripts',
   'har.long': 'very long', 'har.dup': 'repeated param', 'har.bad': 'unreadable URL',
+  'tpl.title': 'URL templates (RFC 6570)',
+  'tpl.lede': 'The notation OpenAPI and the GitHub API hand you: <code>{id}</code>, <code>{/path*}</code>, <code>{?q,page}</code>. Fill it in below, or paste a finished URL at the bottom to get the values back out.',
+  'tpl.template': 'Template', 'tpl.vars': 'Values', 'tpl.result': 'Expanded',
+  'tpl.match': 'Or paste a finished URL and get the values back',
+  'tpl.badOp': '<code>{0}</code> is reserved by the spec but no operator uses it.',
+  'tpl.badVar': '<code>{0}</code> is not a valid variable specification.',
+  'tpl.missing': 'No value for: {0}. Those expressions expand to nothing, which is what the spec asks for.',
+  'tpl.ok': 'Expanded, {0} variable(s) in the template.',
+  'tpl.noReverse': 'The <code>{0}</code> operator cannot be read backwards without guessing, so this one is left alone.',
+  'tpl.noMatch': 'That URL does not fit this template.',
+  'tpl.matched': 'Recovered {0} value(s).',
+  'tpl.absent': 'not in the URL',
+
+  'sas.title': 'Azure Blob shared access signature',
+  'sas.account': 'Account', 'sas.container': 'Container', 'sas.blob': 'Blob (optional)',
+  'sas.perms': 'Permissions', 'sas.start': 'Starts (UTC)', 'sas.expiry': 'Expires (UTC)',
+  'sas.version': 'Service version', 'sas.key': 'Account key (Base64)', 'sas.url': 'Signed URL',
+  'sas.read': 'Read a SAS URL someone handed you',
+  'sas.needFields': 'Account, container and key are the three it cannot do without.',
+  'sas.badKey': 'The account key is not valid Base64.',
+  'sas.built': 'Signed. The string above is what Azure will rebuild and compare against.',
+  'sas.expired': '<strong>Already expired.</strong>',
+  'sas.writable': 'These permissions allow writing or deleting, not just reading.',
+  'sas.httpAllowed': 'Plain http is allowed, so the signature itself can be read off the wire.',
+  'sas.noStart': 'No start time, so it was valid the moment it was issued.',
+  'sas.noSig': 'No <code>sig</code> parameter, so this is not a SAS URL.',
+  'sas.parsed': '{0} parameter(s) in the token.',
+  'sas.validFor': 'Valid for another {0}.',
+  'sas.f.sv': 'Service version', 'sas.f.sr': 'Resource', 'sas.f.sp': 'Permissions',
+  'sas.f.st': 'Starts', 'sas.f.se': 'Expires', 'sas.f.spr': 'Protocol', 'sas.f.sip': 'Allowed IPs',
+  'sas.f.si': 'Stored policy', 'sas.f.ss': 'Services', 'sas.f.srt': 'Resource types', 'sas.f.sig': 'Signature',
+  'sas.p.read': 'read', 'sas.p.add': 'add', 'sas.p.create': 'create', 'sas.p.write': 'write',
+  'sas.p.delete': 'delete', 'sas.p.deleteVersion': 'delete version', 'sas.p.permanentDelete': 'permanent delete',
+  'sas.p.list': 'list', 'sas.p.tags': 'tags', 'sas.p.move': 'move', 'sas.p.execute': 'execute',
+  'sas.p.ownership': 'ownership', 'sas.p.permissions': 'permissions', 'sas.p.immutability': 'immutability policy',
+  'sas.p.filter': 'filter by tags',
+
+  'gcs.title': 'Google Cloud Storage V4 signed URL',
+  'gcs.bucket': 'Bucket', 'gcs.object': 'Object', 'gcs.url': 'Signed URL',
+  'gcs.email': 'Service account e-mail',
+  'gcs.key': 'Private key (PKCS#8 PEM, from the service-account JSON)',
+  'gcs.testKey': 'Make a test key', 'gcs.making': 'Generating a key pair\u2026',
+  'gcs.needFields': 'Bucket, object, e-mail and private key.',
+  'gcs.built': 'Signed with RSA-SHA256, good for {0}. Google caps a signed URL at seven days.',
+  'gcs.badKey': 'That key could not be used: {0}. It has to be the PKCS#8 PEM from the service-account JSON, the one that starts with BEGIN PRIVATE KEY.',
   'mode.simple': 'Simple', 'mode.expert': 'Expert',
   'start.title': 'What do you need to do?',
   'start.lede': 'Pick a job and you get one box to paste into and one answer back. Everything runs in this tab \u2014 nothing is uploaded.',
@@ -2234,6 +2370,51 @@ tr: {
   'har.creds': 'kimlik bilgisi', 'har.secret': 'sorguda gizli de\u011fer', 'har.double': '\u00e7ift kodlu',
   'har.space': 'd\u00fcz bo\u015fluk', 'har.plain': 'd\u00fcz http', 'har.mixed': 'kar\u0131\u015f\u0131k yaz\u0131',
   'har.long': '\u00e7ok uzun', 'har.dup': 'tekrar eden parametre', 'har.bad': 'okunamayan adres',
+  'tpl.title': 'URL \u015fablonlar\u0131 (RFC 6570)',
+  'tpl.lede': 'OpenAPI\u2019nin ve GitHub API\u2019sinin size verdi\u011fi g\u00f6sterim: <code>{id}</code>, <code>{/path*}</code>, <code>{?q,page}</code>. A\u015fa\u011f\u0131da doldurun, ya da en altta bitmi\u015f bir adres yap\u0131\u015ft\u0131r\u0131p de\u011ferleri geri \u00e7\u0131kar\u0131n.',
+  'tpl.template': '\u015eablon', 'tpl.vars': 'De\u011ferler', 'tpl.result': 'Geni\u015fletilmi\u015f',
+  'tpl.match': 'Ya da bitmi\u015f bir adres yap\u0131\u015ft\u0131r\u0131n, de\u011ferleri geri al\u0131n',
+  'tpl.badOp': '<code>{0}</code> spesifikasyonda ayr\u0131lm\u0131\u015f ama hi\u00e7bir operat\u00f6r onu kullanm\u0131yor.',
+  'tpl.badVar': '<code>{0}</code> ge\u00e7erli bir de\u011fi\u015fken tan\u0131m\u0131 de\u011fil.',
+  'tpl.missing': '\u015eunlar i\u00e7in de\u011fer yok: {0}. O ifadeler bo\u015fa geni\u015fler; spesifikasyonun istedi\u011fi de budur.',
+  'tpl.ok': 'Geni\u015fletildi, \u015fablonda {0} de\u011fi\u015fken var.',
+  'tpl.noReverse': '<code>{0}</code> operat\u00f6r\u00fc tahmin y\u00fcr\u00fctmeden geriye okunamaz, bu y\u00fczden dokunulmad\u0131.',
+  'tpl.noMatch': 'Bu adres bu \u015fabluna oturmuyor.',
+  'tpl.matched': '{0} de\u011fer geri \u00e7\u0131kar\u0131ld\u0131.',
+  'tpl.absent': 'adreste yok',
+
+  'sas.title': 'Azure Blob payla\u015f\u0131ml\u0131 eri\u015fim imzas\u0131',
+  'sas.account': 'Hesap', 'sas.container': 'Container', 'sas.blob': 'Blob (iste\u011fe ba\u011fl\u0131)',
+  'sas.perms': '\u0130zinler', 'sas.start': 'Ba\u015flang\u0131\u00e7 (UTC)', 'sas.expiry': 'Biti\u015f (UTC)',
+  'sas.version': 'Servis s\u00fcr\u00fcm\u00fc', 'sas.key': 'Hesap anahtar\u0131 (Base64)', 'sas.url': '\u0130mzal\u0131 adres',
+  'sas.read': 'Size verilen bir SAS adresini oku',
+  'sas.needFields': 'Hesap, container ve anahtar olmadan olmuyor.',
+  'sas.badKey': 'Hesap anahtar\u0131 ge\u00e7erli Base64 de\u011fil.',
+  'sas.built': '\u0130mzaland\u0131. Yukar\u0131daki dizgi, Azure\u2019un yeniden kurup kar\u015f\u0131la\u015ft\u0131raca\u011f\u0131 \u015fey.',
+  'sas.expired': '<strong>S\u00fcresi ge\u00e7mi\u015f.</strong>',
+  'sas.writable': 'Bu izinler yaln\u0131zca okumaya de\u011fil, yazmaya ya da silmeye de izin veriyor.',
+  'sas.httpAllowed': 'D\u00fcz http\u2019ye izin var; imzan\u0131n kendisi hattan okunabilir.',
+  'sas.noStart': 'Ba\u015flang\u0131\u00e7 zaman\u0131 yok, yani verildi\u011fi anda ge\u00e7erliydi.',
+  'sas.noSig': '<code>sig</code> parametresi yok, bu bir SAS adresi de\u011fil.',
+  'sas.parsed': 'Token\u2019da {0} parametre var.',
+  'sas.validFor': '{0} daha ge\u00e7erli.',
+  'sas.f.sv': 'Servis s\u00fcr\u00fcm\u00fc', 'sas.f.sr': 'Kaynak', 'sas.f.sp': '\u0130zinler',
+  'sas.f.st': 'Ba\u015flang\u0131\u00e7', 'sas.f.se': 'Biti\u015f', 'sas.f.spr': 'Protokol', 'sas.f.sip': '\u0130zinli IP\u2019ler',
+  'sas.f.si': 'Kay\u0131tl\u0131 politika', 'sas.f.ss': 'Servisler', 'sas.f.srt': 'Kaynak t\u00fcrleri', 'sas.f.sig': '\u0130mza',
+  'sas.p.read': 'okuma', 'sas.p.add': 'ekleme', 'sas.p.create': 'olu\u015fturma', 'sas.p.write': 'yazma',
+  'sas.p.delete': 'silme', 'sas.p.deleteVersion': 's\u00fcr\u00fcm silme', 'sas.p.permanentDelete': 'kal\u0131c\u0131 silme',
+  'sas.p.list': 'listeleme', 'sas.p.tags': 'etiketler', 'sas.p.move': 'ta\u015f\u0131ma', 'sas.p.execute': '\u00e7al\u0131\u015ft\u0131rma',
+  'sas.p.ownership': 'sahiplik', 'sas.p.permissions': 'izinler', 'sas.p.immutability': 'de\u011fi\u015fmezlik politikas\u0131',
+  'sas.p.filter': 'etikete g\u00f6re s\u00fczme',
+
+  'gcs.title': 'Google Cloud Storage V4 imzal\u0131 adres',
+  'gcs.bucket': 'Bucket', 'gcs.object': 'Nesne', 'gcs.url': '\u0130mzal\u0131 adres',
+  'gcs.email': 'Servis hesab\u0131 e-postas\u0131',
+  'gcs.key': '\u00d6zel anahtar (servis hesab\u0131 JSON\u2019undaki PKCS#8 PEM)',
+  'gcs.testKey': 'Test anahtar\u0131 \u00fcret', 'gcs.making': 'Anahtar \u00e7ifti \u00fcretiliyor\u2026',
+  'gcs.needFields': 'Bucket, nesne, e-posta ve \u00f6zel anahtar.',
+  'gcs.built': 'RSA-SHA256 ile imzaland\u0131, {0} ge\u00e7erli. Google imzal\u0131 adresi en fazla yedi g\u00fcnle s\u0131n\u0131rlar.',
+  'gcs.badKey': 'Bu anahtar kullan\u0131lamad\u0131: {0}. Servis hesab\u0131 JSON\u2019undaki PKCS#8 PEM olmal\u0131 \u2014 BEGIN PRIVATE KEY ile ba\u015flayan.',
   'mode.simple': 'Basit', 'mode.expert': 'Uzman',
   'start.title': 'Ne yapmak istiyorsunuz?',
   'start.lede': 'Bir i\u015f se\u00e7in; yap\u0131\u015ft\u0131raca\u011f\u0131n\u0131z tek bir kutu ve tek bir cevap gelsin. Her \u015fey bu sekmede \u00e7al\u0131\u015f\u0131r \u2014 hi\u00e7bir \u015fey g\u00f6nderilmez.',
@@ -4169,6 +4350,7 @@ function rebuildDynamic() {
   runShapes(); runOasTable(); runShapeRead();
   runCors(); runCookies();
   runRedirects(); runCache(); runCsp();
+  runTemplate(); runSas(); runGcs();
   renderHar();
   renderRecents();
   if (activeTab === 'reference') buildReference();
@@ -4395,6 +4577,39 @@ function bind() {
   });
 
   /* shapes */
+  ['#tpl-in', '#tpl-vars'].forEach(x => $(x).addEventListener('input', runTemplate));
+  $('#tpl-url').addEventListener('input', runTemplateMatch);
+  $('#btn-tpl-copy').addEventListener('click', () => copy($('#tpl-out').textContent));
+  $('#btn-tpl-sample').addEventListener('click', () => {
+    $('#tpl-in').value = 'https://api.example.com/repos{/owner,repo}/issues{?state,labels*,page}';
+    $('#tpl-vars').value = JSON.stringify({ owner: 'dikeckaan', repo: 'urlforge', state: 'open', labels: ['bug', 'iyi ilk i\u015f'], page: 2 }, null, 2);
+    $('#tpl-url').value = 'https://api.example.com/repos/dikeckaan/urlforge/issues?state=open&labels=bug&page=2';
+    runTemplate();
+  });
+
+  ['#sas-account', '#sas-container', '#sas-blob', '#sas-perms', '#sas-start', '#sas-expiry', '#sas-version', '#sas-key']
+    .forEach(x => $(x).addEventListener('input', runSas));
+  $('#sas-protocol').addEventListener('change', runSas);
+  $('#btn-sas-copy').addEventListener('click', () => copy($('#sas-out').textContent));
+  $('#sas-parse').addEventListener('input', parseSas);
+  $('#btn-sas-sample').addEventListener('click', () => {
+    $('#sas-account').value = 'examplestorage';
+    $('#sas-container').value = 'reports';
+    $('#sas-blob').value = '2026/q3 rapor.pdf';
+    $('#sas-perms').value = 'r';
+    $('#sas-start').value = '';
+    $('#sas-expiry').value = isoZ(new Date(Date.now() + 86400000));
+    $('#sas-key').value = bytesToB64(randomBytes(32), false);
+    runSas();
+    setTimeout(() => { $('#sas-parse').value = $('#sas-out').textContent; parseSas(); }, 60);
+  });
+
+  ['#gcs-bucket', '#gcs-object', '#gcs-email', '#gcs-key', '#gcs-expires']
+    .forEach(x => $(x).addEventListener('input', runGcs));
+  $('#gcs-method').addEventListener('change', runGcs);
+  $('#btn-gcs-key').addEventListener('click', makeGcsTestKey);
+  $('#btn-gcs-copy').addEventListener('click', () => copy($('#gcs-out').textContent));
+
   $('#shp-json').addEventListener('input', runShapes);
   $('#shp-decoded').addEventListener('change', runShapes);
   $('#shp-oas-in').addEventListener('change', runOasTable);
@@ -5375,6 +5590,374 @@ function runCsp() {
   status(st, f.some(x => x.level === 'danger') ? 'danger' : f.some(x => x.level === 'warn') ? 'warn' : 'ok',
     t('csp.count', Object.keys(directives).length));
   renderFindingList(fbox, sortFindings(f));
+}
+
+/* ======================================================================
+   10h. RFC 6570 URL templates
+   ====================================================================== */
+const UT_OPS = {
+  '':  { first: '',  sep: ',', named: false, ifemp: '', reserved: false },
+  '+': { first: '',  sep: ',', named: false, ifemp: '', reserved: true },
+  '#': { first: '#', sep: ',', named: false, ifemp: '', reserved: true },
+  '.': { first: '.', sep: '.', named: false, ifemp: '', reserved: false },
+  '/': { first: '/', sep: '/', named: false, ifemp: '', reserved: false },
+  ';': { first: ';', sep: ';', named: true,  ifemp: '', reserved: false },
+  '?': { first: '?', sep: '&', named: true,  ifemp: '=', reserved: false },
+  '&': { first: '&', sep: '&', named: true,  ifemp: '=', reserved: false }
+};
+/* The reserved form keeps :/?#[]@!$&'()*+,;= and any escape already present. */
+function utEncode(str, reserved) {
+  const v = String(str);
+  if (!reserved) return pctEncode(v, SAFE.unreserved, false);
+  let out = '', i = 0;
+  while (i < v.length) {
+    const m = /^%[0-9A-Fa-f]{2}/.exec(v.slice(i));
+    if (m) { out += m[0]; i += 3; continue; }
+    const ch = String.fromCodePoint(v.codePointAt(i));
+    out += pctEncode(ch, c => SAFE.unreserved(c) || GEN_DELIMS.has(c) || SUB_DELIMS.has(c), false);
+    i += ch.length;
+  }
+  return out;
+}
+function templateVars(tpl) {
+  const names = [];
+  String(tpl).replace(/\{([^{}]+)\}/g, (all, expr) => {
+    if ('+#./;?&=,!@|'.indexOf(expr.charAt(0)) >= 0) expr = expr.slice(1);
+    expr.split(',').forEach(spec => {
+      const n = spec.replace(/(\*|:\d+)$/, '');
+      if (n && names.indexOf(n) < 0) names.push(n);
+    });
+    return '';
+  });
+  return names;
+}
+function expandTemplate(tpl, vars) {
+  return String(tpl).replace(/\{([^{}]+)\}/g, (all, raw) => {
+    let expr = raw, op = '';
+    if ('+#./;?&=,!@|'.indexOf(expr.charAt(0)) >= 0) { op = expr.charAt(0); expr = expr.slice(1); }
+    const cfg = UT_OPS[op];
+    if (!cfg) throw new Error(t('tpl.badOp', op));
+
+    const parts = [];
+    expr.split(',').forEach(spec => {
+      const m = /^([A-Za-z0-9_][A-Za-z0-9_.%]*)(\*|:\d+)?$/.exec(spec);
+      if (!m) throw new Error(t('tpl.badVar', spec));
+      const name = m[1], mod = m[2] || '';
+      const explode = mod === '*';
+      const prefix = /^:\d+$/.test(mod) ? parseInt(mod.slice(1), 10) : null;
+      const value = vars[name];
+      if (value === undefined || value === null) return;
+
+      const enc = v => utEncode(v, cfg.reserved);
+      const pair = (k, v) => k + (v === '' ? cfg.ifemp : '=' + v);
+
+      if (Array.isArray(value)) {
+        if (!value.length) return;
+        if (explode) {
+          value.forEach(item => parts.push(cfg.named ? pair(name, enc(item)) : enc(item)));
+        } else {
+          const joined = value.map(enc).join(',');
+          parts.push(cfg.named ? pair(name, joined) : joined);
+        }
+        return;
+      }
+      if (typeof value === 'object') {
+        const keys = Object.keys(value);
+        if (!keys.length) return;
+        if (explode) {
+          keys.forEach(k => parts.push(enc(k) + '=' + enc(value[k])));
+        } else {
+          const joined = keys.map(k => enc(k) + ',' + enc(value[k])).join(',');
+          parts.push(cfg.named ? pair(name, joined) : joined);
+        }
+        return;
+      }
+      let v = String(value);
+      if (prefix !== null) v = Array.from(v).slice(0, prefix).join('');
+      parts.push(cfg.named ? pair(name, enc(v)) : enc(v));
+    });
+    return parts.length ? cfg.first + parts.join(cfg.sep) : '';
+  });
+}
+
+/* Going backwards only works for the operators that map onto a path or a
+   query cleanly; anything else is reported rather than guessed at. */
+function matchTemplate(tpl, url) {
+  const queryNames = [];
+  let pattern = '^', unsupported = null;
+  const order = [];
+  const lit = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const chunks = String(tpl).match(/\{[^{}]+\}|[^{]+/g) || [];
+  chunks.forEach(chunk => {
+    if (chunk.charAt(0) !== '{') { pattern += lit(chunk); return; }
+    let expr = chunk.slice(1, -1), op = '';
+    if ('+#./;?&=,!@|'.indexOf(expr.charAt(0)) >= 0) { op = expr.charAt(0); expr = expr.slice(1); }
+    const specs = expr.split(',').map(x => x.replace(/(\*|:\d+)$/, ''));
+    if (op === '?' || op === '&') { specs.forEach(n => queryNames.push(n)); return; }
+    if (op === '/') { specs.forEach(n => { pattern += '/([^/?#]+)'; order.push(n); }); return; }
+    if (op === '.') { specs.forEach(n => { pattern += '\\.([^./?#]+)'; order.push(n); }); return; }
+    if (op === '' || op === '+') { specs.forEach(n => { pattern += (op === '+' ? '([^?#]+)' : '([^/?#]+)'); order.push(n); }); return; }
+    if (op === '#') { pattern += '(?:#(.*))?'; specs.forEach(n => order.push(n)); return; }
+    unsupported = op;
+  });
+  if (unsupported) return { ok: false, reason: t('tpl.noReverse', unsupported) };
+
+  const [pathPart] = String(url).split('?');
+  const re = new RegExp(pattern + '$');
+  const m = re.exec(pathPart);
+  if (!m) return { ok: false, reason: t('tpl.noMatch') };
+
+  const vars = {};
+  order.forEach((n, i) => {
+    const v = m[i + 1];
+    if (v === undefined) return;
+    const d = pctDecode(v, { plus: false, lossy: true });
+    vars[n] = d.ok ? d.value : v;
+  });
+  const qIndex = String(url).indexOf('?');
+  if (qIndex >= 0) {
+    splitQuery(String(url).slice(qIndex + 1).split('#')[0], true).forEach(pp => {
+      if (queryNames.indexOf(pp.name) < 0) return;
+      if (pp.name in vars) {
+        if (Array.isArray(vars[pp.name])) vars[pp.name].push(pp.value);
+        else vars[pp.name] = [vars[pp.name], pp.value];
+      } else vars[pp.name] = pp.value;
+    });
+  }
+  return { ok: true, vars: vars, missing: queryNames.filter(n => !(n in vars)) };
+}
+
+function runTemplate() {
+  const st = $('#tpl-status');
+  const out = $('#tpl-out');
+  const needs = $('#tpl-needs');
+  needs.innerHTML = '';
+  const tpl = $('#tpl-in').value.trim();
+  if (!tpl) { out.textContent = ''; status(st, 'info', ''); runTemplateMatch(); return; }
+
+  const names = templateVars(tpl);
+  let vars = {};
+  const rawVars = $('#tpl-vars').value.trim();
+  let parseError = null;
+  if (rawVars) { try { vars = JSON.parse(rawVars); } catch (e) { parseError = e.message; } }
+
+  names.forEach(n => {
+    const given = Object.prototype.hasOwnProperty.call(vars, n) && vars[n] !== null && vars[n] !== undefined;
+    needs.appendChild(el('span', 'chip ' + (given ? 'chip-ok' : 'chip-warn'), n));
+  });
+
+  if (parseError) { out.textContent = ''; status(st, 'danger', t('shp.badJson', parseError)); runTemplateMatch(); return; }
+  try {
+    out.textContent = expandTemplate(tpl, vars);
+    const missing = names.filter(n => !Object.prototype.hasOwnProperty.call(vars, n));
+    status(st, missing.length ? 'warn' : 'ok',
+      missing.length ? t('tpl.missing', missing.join(', ')) : t('tpl.ok', names.length));
+  } catch (e) {
+    out.textContent = '';
+    status(st, 'danger', e.message);
+  }
+  runTemplateMatch();
+}
+function runTemplateMatch() {
+  const box = $('#tpl-match');
+  box.innerHTML = '';
+  const tpl = $('#tpl-in').value.trim();
+  const url = $('#tpl-url').value.trim();
+  if (!tpl || !url) return;
+  const r = matchTemplate(tpl, url);
+  if (!r.ok) { status(box, 'warn', r.reason); return; }
+  status(box, 'ok', t('tpl.matched', Object.keys(r.vars).length));
+  const dl = el('dl', 'pairs');
+  dl.style.marginTop = '10px';
+  Object.keys(r.vars).forEach(k => {
+    dl.appendChild(el('dt', null, k));
+    dl.appendChild(el('dd', null, Array.isArray(r.vars[k]) ? r.vars[k].join(', ') : r.vars[k]));
+  });
+  r.missing.forEach(k => {
+    dl.appendChild(el('dt', null, k));
+    const dd = el('dd', 'void', t('tpl.absent'));
+    dl.appendChild(dd);
+  });
+  box.appendChild(dl);
+}
+
+/* ======================================================================
+   10i. Azure Blob SAS and Google Cloud Storage V4
+   ====================================================================== */
+const SAS_PERMS = {
+  r: 'sas.p.read', a: 'sas.p.add', c: 'sas.p.create', w: 'sas.p.write', d: 'sas.p.delete',
+  x: 'sas.p.deleteVersion', y: 'sas.p.permanentDelete', l: 'sas.p.list', t: 'sas.p.tags',
+  m: 'sas.p.move', e: 'sas.p.execute', o: 'sas.p.ownership', p: 'sas.p.permissions',
+  i: 'sas.p.immutability', f: 'sas.p.filter'
+};
+const isoZ = d => d.toISOString().replace(/\.\d{3}/, '');
+
+async function runSas() {
+  const st = $('#sas-status');
+  const out = $('#sas-out');
+  const account = $('#sas-account').value.trim();
+  const container = $('#sas-container').value.trim();
+  const blob = $('#sas-blob').value.trim();
+  const key = $('#sas-key').value.trim();
+  if (!account || !container || !key) {
+    $('#sas-sts').textContent = ''; out.textContent = '';
+    status(st, 'info', t('sas.needFields'));
+    return;
+  }
+  if (!HAS_CRYPTO) { status(st, 'warn', t('cv.noCrypto')); return; }
+
+  const perms = $('#sas-perms').value.trim();
+  const start = $('#sas-start').value.trim();
+  const expiry = $('#sas-expiry').value.trim() || isoZ(new Date(Date.now() + 3600000));
+  const protocol = $('#sas-protocol').value;
+  const version = $('#sas-version').value.trim();
+  const resource = blob ? 'b' : 'c';
+  const canonical = '/blob/' + account + '/' + container + (blob ? '/' + blob : '');
+
+  /* Field order is fixed by the service version; a stray blank line breaks it. */
+  const stringToSign = [
+    perms, start, expiry, canonical,
+    '',          /* signed identifier */
+    '',          /* signed IP */
+    protocol, version, resource,
+    '',          /* snapshot time */
+    '',          /* encryption scope */
+    '', '', '', '', ''  /* rscc rscd rsce rscl rsct */
+  ].join('\n');
+  $('#sas-sts').textContent = stringToSign;
+
+  let keyBytes;
+  try { keyBytes = b64ToBytes(key); }
+  catch (e) { out.textContent = ''; status(st, 'danger', t('sas.badKey')); return; }
+
+  const mac = await hmacBytes(keyBytes, stringToSign, 'SHA-256');
+  const sig = bytesToB64(mac, false);
+  const qs = [
+    ['sv', version], ['sr', resource], ['sp', perms],
+    ['st', start], ['se', expiry], ['spr', protocol], ['sig', sig]
+  ].filter(p => p[1]).map(p => p[0] + '=' + pctEncode(p[1], SAFE.component, false)).join('&');
+
+  out.textContent = 'https://' + account + '.blob.core.windows.net/' + container +
+    (blob ? '/' + blob.split('/').map(seg => pctEncode(seg, SAFE.path, false)).join('/') : '') + '?' + qs;
+
+  const notes = [];
+  const expMs = Date.parse(expiry);
+  if (!isNaN(expMs) && expMs < Date.now()) notes.push(t('sas.expired'));
+  if (/w|d|a|c/.test(perms)) notes.push(t('sas.writable'));
+  if (protocol !== 'https') notes.push(t('sas.httpAllowed'));
+  status(st, notes.length ? 'warn' : 'ok', notes.join(' ') || t('sas.built'));
+}
+
+function parseSas() {
+  const box = $('#sas-parse-status');
+  const dl = $('#sas-parse-out');
+  dl.innerHTML = '';
+  const raw = $('#sas-parse').value.trim();
+  if (!raw) { status(box, 'info', ''); return; }
+  const r = parseUrl(raw);
+  if (!r.url || r.error) { status(box, 'danger', t('insp.invalid', r.error || '')); return; }
+  const q = {};
+  splitQuery(r.url.search, false).forEach(pp => { q[pp.name] = pp.value; });
+  if (!q.sig) { status(box, 'warn', t('sas.noSig')); return; }
+
+  const row = (k, v) => { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v)); };
+  const LABELS = { sv: 'sas.f.sv', sr: 'sas.f.sr', sp: 'sas.f.sp', st: 'sas.f.st', se: 'sas.f.se',
+    spr: 'sas.f.spr', sip: 'sas.f.sip', si: 'sas.f.si', ss: 'sas.f.ss', srt: 'sas.f.srt', sig: 'sas.f.sig' };
+  Object.keys(q).forEach(k => {
+    const label = LABELS[k] ? t(LABELS[k]) + '  (' + k + ')' : k;
+    let v = q[k];
+    if (k === 'sp') v = v + '  \u2014  ' + Array.from(v).map(c => SAS_PERMS[c] ? t(SAS_PERMS[c]) : c).join(', ');
+    if (k === 'sr') v = v + (v === 'b' ? '  \u2014  blob' : v === 'c' ? '  \u2014  container' : '');
+    if (k === 'sig') v = v.slice(0, 24) + '\u2026';
+    row(label, v);
+  });
+
+  const notes = [];
+  const expMs = q.se ? Date.parse(q.se) : NaN;
+  if (!isNaN(expMs)) {
+    const left = Math.round((expMs - Date.now()) / 1000);
+    notes.push({ level: left <= 0 ? 'danger' : left < 3600 ? 'warn' : 'ok',
+      html: left <= 0 ? t('sas.expired') : t('sas.validFor', humanSeconds(left)) });
+  }
+  if (q.sp && /w|d|a|c/.test(q.sp)) notes.push({ level: 'warn', html: t('sas.writable') });
+  if (q.spr && q.spr !== 'https') notes.push({ level: 'warn', html: t('sas.httpAllowed') });
+  if (!q.st) notes.push({ level: 'info', html: t('sas.noStart') });
+  status(box, notes.some(n => n.level === 'danger') ? 'danger' : notes.some(n => n.level === 'warn') ? 'warn' : 'ok',
+    t('sas.parsed', Object.keys(q).length));
+  const fbox = el('div', 'findings');
+  fbox.style.marginTop = '10px';
+  renderFindingList(fbox, sortFindings(notes));
+  box.appendChild(fbox);
+}
+
+/* ---- GCS V4, RSA-signed ---- */
+function pemToDer(pem) {
+  const body = String(pem).replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  return b64ToBytes(body);
+}
+async function runGcs() {
+  const st = $('#gcs-status');
+  const out = $('#gcs-out');
+  const bucket = $('#gcs-bucket').value.trim();
+  const object = $('#gcs-object').value.trim();
+  const email = $('#gcs-email').value.trim();
+  const pem = $('#gcs-key').value.trim();
+  if (!bucket || !object || !email || !pem) {
+    $('#gcs-canonical').textContent = ''; out.textContent = '';
+    status(st, 'info', t('gcs.needFields'));
+    return;
+  }
+  if (!HAS_CRYPTO) { status(st, 'warn', t('cv.noCrypto')); return; }
+
+  const method = $('#gcs-method').value;
+  const expires = Math.min(parseInt($('#gcs-expires').value, 10) || 3600, 604800);
+  const now = new Date();
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const datestamp = stamp.slice(0, 8);
+  const scope = datestamp + '/auto/storage/goog4_request';
+  const host = 'storage.googleapis.com';
+  const path = '/' + bucket + '/' + object.split('/').map(seg => awsEncode(seg, true)).join('/');
+
+  const params = [
+    ['X-Goog-Algorithm', 'GOOG4-RSA-SHA256'],
+    ['X-Goog-Credential', awsEncode(email + '/' + scope, true)],
+    ['X-Goog-Date', stamp],
+    ['X-Goog-Expires', String(expires)],
+    ['X-Goog-SignedHeaders', 'host']
+  ].sort((a, b) => a[0] < b[0] ? -1 : 1);
+  const canonicalQuery = params.map(p => p[0] + '=' + p[1]).join('&');
+  const canonicalRequest = [method, path, canonicalQuery, 'host:' + host + '\n', 'host', 'UNSIGNED-PAYLOAD'].join('\n');
+  $('#gcs-canonical').textContent = canonicalRequest;
+
+  const stringToSign = ['GOOG4-RSA-SHA256', stamp, scope, await sha256Hex(canonicalRequest)].join('\n');
+
+  try {
+    const der = pemToDer(pem);
+    const key = await crypto.subtle.importKey('pkcs8', der,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+    const sigBytes = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, TE.encode(stringToSign));
+    const sig = bytesToHexStr(new Uint8Array(sigBytes), '');
+    out.textContent = 'https://' + host + path + '?' + canonicalQuery + '&X-Goog-Signature=' + sig;
+    status(st, 'ok', t('gcs.built', humanSeconds(expires)));
+  } catch (e) {
+    out.textContent = '';
+    status(st, 'danger', t('gcs.badKey', e.message));
+  }
+}
+async function makeGcsTestKey() {
+  const st = $('#gcs-status');
+  if (!HAS_CRYPTO) { status(st, 'warn', t('cv.noCrypto')); return; }
+  status(st, 'info', t('gcs.making'));
+  const pair = await crypto.subtle.generateKey(
+    { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+    true, ['sign', 'verify']);
+  const der = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
+  const b64 = bytesToB64(der, false).replace(/(.{64})/g, '$1\n');
+  $('#gcs-key').value = '-----BEGIN PRIVATE KEY-----\n' + b64 + '\n-----END PRIVATE KEY-----';
+  if (!$('#gcs-email').value) $('#gcs-email').value = 'signer@project.iam.gserviceaccount.com';
+  if (!$('#gcs-bucket').value) $('#gcs-bucket').value = 'example-bucket';
+  if (!$('#gcs-object').value) $('#gcs-object').value = 'reports/2026 q3.pdf';
+  runGcs();
 }
 
 /* ======================================================================

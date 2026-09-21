@@ -19,12 +19,20 @@ jargon — and every job links through to the full tool with whatever you had ty
 > Make a copied URL readable · Make a value safe for a URL · See and edit the query parameters ·
 > Check a URL for problems · Turn a curl command into code · Show what is inside Base64 or a JWT ·
 > Do the same thing to many lines · Timestamps, hashes and IDs · Check a webhook signature ·
-> Why did the browser block my request?
+> Why did the browser block my request? · QR codes, both ways
 
 Paste anything into the box above the cards and urlforge picks the job for you. `⌘K` opens a
 command palette over every job, tool and setting.
 
 **Expert** is the nine-tab workbench below, one click away in the top bar. The choice is remembered.
+
+It works on a phone, and not by accident: 16px fields so iOS stops zooming, touch targets that
+clear 40px, wide tables that become labelled blocks instead of a horizontal scroll race, safe-area
+insets, and a Paste button wherever there is no keyboard.
+
+**Keep a copy.** The Download button saves the whole page as one file. That copy carries an
+“Offline edition” badge linking back here, and needs nothing from the network — which is the
+only thing urlforge asks you to trust it about.
 
 ## What it does
 
@@ -61,7 +69,20 @@ command palette over every job, tool and setting.
   `.` and `..`, upper-case percent escapes and decode the ones that never needed escaping.
 - Side-by-side comparison of two URLs, diffing both the parts and the parameters.
 
-### Batch
+### QR codes
+
+A byte-mode encoder written from scratch — Reed-Solomon over GF(256), block interleaving, all
+eight masks scored by penalty, versions 1 to 40 — verified by round-tripping its own output back
+through the browser's `BarcodeDetector`. Reading works the same way: pick a photo or a screenshot
+and, on a phone, the file input opens the camera, so you can point it at a code and take the URL
+apart before trusting it.
+
+### Batch — and HAR files
+
+Drop a `.har` from your browser's network panel anywhere on the page and every URL in the session
+is taken apart at once: secrets in query strings, doubly-encoded values, credentials, plain http,
+mixed-script hosts, repeated parameters. A summary of hosts and the parameters that appear most,
+a filter, a flagged-only view, CSV out, and one click to send any URL to the inspector.
 
 Sixteen operations applied to every line: encode and decode in four flavours, decode until
 the text stops changing, normalise, keep only the host, origin or path, drop the query and
@@ -92,6 +113,12 @@ export as TXT, CSV or JSON.
 - A JWT peek that decodes the header and payload and renders `iat`, `nbf` and `exp` as dates.
   It never checks signatures — [jwtforge](https://kaandikec.com/jwtforge/) does that.
 
+### Shapes — also URL templates
+
+RFC 6570, the notation OpenAPI and the GitHub API hand you: `{id}`, `{/path*}`, `{?q,page}`.
+All eight operators and both modifiers, checked against the eleven expansion examples in the
+specification. It also runs backwards: paste a finished URL and get the variables out.
+
 ### Sign
 
 Nothing on this tab leaves the page, which is the point: a signing secret has no business being
@@ -109,8 +136,15 @@ pasted into a website that talks to a server.
   newline your editor added, whitespace in the secret, or JSON that was parsed and re-serialised
   before you copied it. "Load an example" mints a body and a matching signature so you can see a
   passing case first.
+- **Azure Blob shared access signatures**, built and read. The string to sign is shown in full,
+  because a single stray blank line in it is the usual reason a SAS comes back 403. Reading one
+  spells out the permission letters, works out how long is left on it, and says when it allows
+  writing, or plain http, or started life already valid.
+- **Google Cloud Storage V4 signed URLs**, RSA-SHA256 with the PKCS#8 key from a service-account
+  JSON, signed in the page through the Web Crypto API. “Make a test key” generates a throw-away
+  pair so no real key has to be pasted to see how it works.
 
-### Shapes
+### Shapes — query dialects
 
 The same JSON object written out the way nine different stacks write it — `qs`, PHP, Rails, Rack,
 Spring, ASP.NET Core, `URLSearchParams`, Go, `requests`, and the OpenAPI `form`, `deepObject`,
@@ -129,6 +163,18 @@ other way: back to JSON, with a guess at which dialect wrote it.
 - **Set-Cookie.** Attributes decoded, lifetime worked out, and the usual mistakes called out:
   `SameSite=None` without `Secure`, a session cookie with no `HttpOnly`, a `__Host-` name that
   breaks its own rules, `Max-Age` and `Expires` fighting each other, and anything over 4 KB.
+- **Redirect chains.** Give it a status and a `Location` per hop; it resolves them the way a
+  browser would and says what changes underfoot — a 301 or 302 rewriting your POST into a GET and
+  dropping the body, 307 and 308 keeping it, loops, https-to-http downgrades, a query that stops
+  being carried, and the origin change that drops your `Authorization` header.
+- **Caching.** Two verdicts, browser and CDN, because they disagree more often than not.
+  Freshness in the order the spec checks it — `s-maxage`, `max-age`, `Expires` minus `Date`, then
+  the `Last-Modified` heuristic — against the `Age` already on the clock, plus `no-store`,
+  `private`, `Vary: *`, `immutable` and `stale-while-revalidate`.
+- **Content-Security-Policy.** Every directive with its sources, and the findings that matter:
+  `unsafe-inline` (and when a nonce makes browsers ignore it), `unsafe-eval`, a wildcard or bare
+  scheme in `script-src`, missing `object-src`, `base-uri`, `frame-ancestors` and `form-action`,
+  and directive names no browser knows — which fail silently.
 
 ### Reference
 
@@ -138,6 +184,13 @@ whether it may appear literally in a path segment, a query or a fragment.
 
 The URL inspector also flags **mixed writing systems** in a hostname — the Cyrillic а in
 `аpple.com` — naming the odd characters and their code points.
+
+## Getting around
+
+`⌘K` or `Ctrl+K` opens a command palette over every job, tool and setting. `Alt+1` to `Alt+9`
+jump straight to a tool. A single open job shares as a readable link — `#/encode?v=…` — rather
+than one opaque blob, and a link pasted into an already-open tab lands rather than doing nothing.
+The last eight things you worked on come back as chips on the start screen.
 
 ## Privacy
 
