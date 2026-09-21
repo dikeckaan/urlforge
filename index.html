@@ -214,6 +214,14 @@ select { cursor: pointer; }
 .notice-danger { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 32%, transparent); color: var(--danger); }
 .notice-info   { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--accent-text); }
 .notice code { font-family: var(--mono); }
+#crash {
+  position: sticky; top: 0; z-index: 45; margin: 0 0 14px;
+  border-radius: var(--radius-sm); padding: 11px 14px; font-size: 13px; line-height: 1.6;
+  background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  color: var(--danger);
+}
+#crash button { margin-left: 10px; }
+#crash code { font-family: var(--mono); }
 
 .chip {
   display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px;
@@ -635,6 +643,7 @@ body.touch .pastebtn { display: inline-flex; align-items: center; }
 </nav>
 
 <main>
+<div id="crash" hidden role="alert"></div>
 <!-- ============================ Simple mode =============================== -->
 <div class="view" id="view-start">
   <div class="start-head">
@@ -1634,6 +1643,28 @@ body.touch .pastebtn { display: inline-flex; align-items: center; }
       </div>
     </div>
   </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="selftest.title">Does this build work in your browser?</h2>
+      <div class="spacer"></div>
+      <span class="chip" id="selftest-score">—</span>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-selftest" data-i18n="selftest.run">Run the checks</button>
+    </div>
+    <div class="panel-body">
+      <p class="lede" data-i18n="selftest.lede">urlforge carries its own conformance checks — the AWS test vector, the eleven expansion examples from RFC 6570, a QR code decoded back through your browser, known hash digests. They run here, on your machine, with no network. If something in this build is wrong where you are, this is how you find out.</p>
+      <div class="tablewrap">
+        <table class="stack">
+          <thead><tr>
+            <th style="width:92px" data-i18n="selftest.th.result">Result</th>
+            <th style="width:30%" data-i18n="selftest.th.check">Check</th>
+            <th data-i18n="selftest.th.detail">Detail</th>
+          </tr></thead>
+          <tbody id="selftest-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </div>
 </main>
 
@@ -1933,6 +1964,26 @@ en: {
   'gcs.needFields': 'Bucket, object, e-mail and private key.',
   'gcs.built': 'Signed with RSA-SHA256, good for {0}. Google caps a signed URL at seven days.',
   'gcs.badKey': 'That key could not be used: {0}. It has to be the PKCS#8 PEM from the service-account JSON, the one that starts with BEGIN PRIVATE KEY.',
+  'selftest.title': 'Does this build work in your browser?',
+  'selftest.lede': 'urlforge carries its own conformance checks \u2014 the AWS test vector, the eleven expansion examples from RFC 6570, a QR code decoded back through your browser, known hash digests. They run here, on your machine, with no network. If something in this build is wrong where you are, this is how you find out.',
+  'selftest.run': 'Run the checks',
+  'selftest.th.result': 'Result', 'selftest.th.check': 'Check', 'selftest.th.detail': 'Detail',
+  'st.pass': 'pass', 'st.fail': 'FAIL', 'st.skip': 'skipped',
+  'st.pct': 'Percent-encoding a Turkish string', 'st.pctBack': 'Percent-decoding it again',
+  'st.form': 'Form encoding, space and plus', 'st.b64': 'Base64URL encoding',
+  'st.b64Back': 'Base64URL decoding', 'st.puny': 'Punycode to ASCII', 'st.punyBack': 'Punycode back to unicode',
+  'st.normalise': 'RFC 3986 normalisation',
+  'st.rfc6570': 'RFC 6570, the specification\u2019s own examples',
+  'st.sha': 'SHA-256 of \u201chello\u201d', 'st.hmac': 'HMAC-SHA256 of \u201chello\u201d with \u201ckey\u201d',
+  'st.sigv4': 'AWS SigV4, the get-vanilla test vector',
+  'st.qr': 'A QR code, encoded then read back',
+  'st.i18n': 'English and Turkish carry the same keys',
+  'st.offline': 'Nothing is loaded from anywhere else',
+  'st.ofN': 'all {0} exact',
+  'st.qrOk': 'version {0}, decoded back to exactly what went in',
+  'st.noCrypto': 'this browser is not exposing the Web Crypto API here',
+  'st.externalRefs': '{0} external reference(s)',
+  'crash.body': '<strong>Something in <code>{0}</code> went wrong:</strong> {1}. What you see in that panel may be stale \u2014 the rest of the page still works.',
   'mode.simple': 'Simple', 'mode.expert': 'Expert',
   'start.title': 'What do you need to do?',
   'start.lede': 'Pick a job and you get one box to paste into and one answer back. Everything runs in this tab \u2014 nothing is uploaded.',
@@ -2425,6 +2476,26 @@ tr: {
   'gcs.needFields': 'Bucket, nesne, e-posta ve \u00f6zel anahtar.',
   'gcs.built': 'RSA-SHA256 ile imzaland\u0131, {0} ge\u00e7erli. Google imzal\u0131 adresi en fazla yedi g\u00fcnle s\u0131n\u0131rlar.',
   'gcs.badKey': 'Bu anahtar kullan\u0131lamad\u0131: {0}. Servis hesab\u0131 JSON\u2019undaki PKCS#8 PEM olmal\u0131 \u2014 BEGIN PRIVATE KEY ile ba\u015flayan.',
+  'selftest.title': 'Bu s\u00fcr\u00fcm sizin taray\u0131c\u0131n\u0131zda \u00e7al\u0131\u015f\u0131yor mu?',
+  'selftest.lede': 'urlforge kendi uygunluk kontrollerini yan\u0131nda ta\u015f\u0131r \u2014 AWS test vekt\u00f6r\u00fc, RFC 6570\u2019in on bir geni\u015fletme \u00f6rne\u011fi, taray\u0131c\u0131n\u0131zla geri okunan bir QR kod, bilinen \u00f6zet de\u011ferleri. Hepsi burada, sizin makinenizde, a\u011f olmadan \u00e7al\u0131\u015f\u0131r. Bu s\u00fcr\u00fcmde sizin taraf\u0131n\u0131zda bir \u015fey bozuksa \u00f6\u011frenmenin yolu budur.',
+  'selftest.run': 'Kontrolleri \u00e7al\u0131\u015ft\u0131r',
+  'selftest.th.result': 'Sonu\u00e7', 'selftest.th.check': 'Kontrol', 'selftest.th.detail': 'Ayr\u0131nt\u0131',
+  'st.pass': 'ge\u00e7ti', 'st.fail': 'KALDI', 'st.skip': 'atland\u0131',
+  'st.pct': 'T\u00fcrk\u00e7e bir dizgiyi y\u00fczde kodlama', 'st.pctBack': 'Geri \u00e7\u00f6zme',
+  'st.form': 'Form kodlamas\u0131, bo\u015fluk ve art\u0131', 'st.b64': 'Base64URL kodlama',
+  'st.b64Back': 'Base64URL \u00e7\u00f6zme', 'st.puny': 'Punycode\u2019a \u00e7evirme', 'st.punyBack': 'Punycode\u2019dan geri \u00e7evirme',
+  'st.normalise': 'RFC 3986 normalleme',
+  'st.rfc6570': 'RFC 6570, spesifikasyonun kendi \u00f6rnekleri',
+  'st.sha': '\u201chello\u201d dizgisinin SHA-256\u2019s\u0131', 'st.hmac': '\u201chello\u201d dizgisinin \u201ckey\u201d ile HMAC-SHA256\u2019s\u0131',
+  'st.sigv4': 'AWS SigV4, get-vanilla test vekt\u00f6r\u00fc',
+  'st.qr': 'Bir QR kod, \u00fcretilip geri okunuyor',
+  'st.i18n': '\u0130ngilizce ve T\u00fcrk\u00e7e ayn\u0131 anahtarlar\u0131 ta\u015f\u0131yor',
+  'st.offline': 'Ba\u015fka hi\u00e7bir yerden bir \u015fey y\u00fcklenmiyor',
+  'st.ofN': '{0} \u00f6rne\u011fin hepsi birebir',
+  'st.qrOk': 's\u00fcr\u00fcm {0}, girenle birebir ayn\u0131s\u0131 geri okundu',
+  'st.noCrypto': 'bu taray\u0131c\u0131 burada Web Crypto API\u2019yi a\u00e7m\u0131yor',
+  'st.externalRefs': '{0} d\u0131\u015f referans',
+  'crash.body': '<strong><code>{0}</code> i\u00e7inde bir \u015fey ters gitti:</strong> {1}. O paneldeki g\u00f6r\u00fcnt\u00fc eski olabilir \u2014 sayfan\u0131n geri kalan\u0131 \u00e7al\u0131\u015f\u0131yor.',
   'mode.simple': 'Basit', 'mode.expert': 'Uzman',
   'start.title': 'Ne yapmak istiyorsunuz?',
   'start.lede': 'Bir i\u015f se\u00e7in; yap\u0131\u015ft\u0131raca\u011f\u0131n\u0131z tek bir kutu ve tek bir cevap gelsin. Her \u015fey bu sekmede \u00e7al\u0131\u015f\u0131r \u2014 hi\u00e7bir \u015fey g\u00f6nderilmez.',
@@ -4713,8 +4784,9 @@ function bind() {
   });
 
   /* reference */
-  $('#ref-filter').addEventListener('input', buildReference);
-  $('#ref-cat').addEventListener('change', buildReference);
+  $('#ref-filter').addEventListener('input', () => buildReference());
+  $('#ref-cat').addEventListener('change', () => buildReference());
+  $('#btn-selftest').addEventListener('click', () => selfTest());
 
   /* keyboard */
   document.addEventListener('keydown', e => {
@@ -4782,89 +4854,107 @@ function amzNow() {
   return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
+/* The signature itself, with no DOM anywhere near it, so the self-test and
+   the tab can both call it. */
+async function sigv4(o) {
+  const url = new URL(o.url);
+  const presign = !!o.presign, s3 = !!o.s3;
+  const dateStamp = o.amzDate.slice(0, 8);
+  const scope = dateStamp + '/' + o.region + '/' + o.service + '/aws4_request';
+  const defPorts = { 'http:': '80', 'https:': '443' };
+  const host = url.hostname + (url.port && url.port !== defPorts[url.protocol] ? ':' + url.port : '');
+  const payloadHash = (o.unsigned || presign) ? 'UNSIGNED-PAYLOAD' : await sha256Hex(o.body || '');
+
+  const headerMap = { host: host };
+  if (!presign) {
+    headerMap['x-amz-date'] = o.amzDate;
+    if (o.token) headerMap['x-amz-security-token'] = o.token;
+    if (s3) headerMap['x-amz-content-sha256'] = payloadHash;
+  }
+  (o.headers || []).forEach(h => {
+    if (h.name) headerMap[h.name.toLowerCase()] = String(h.value).replace(/\s+/g, ' ').trim();
+  });
+  const names = Object.keys(headerMap).sort();
+  const canonicalHeaders = names.map(n => n + ':' + headerMap[n] + '\n').join('');
+  const signedHeaders = names.join(';');
+
+  const qParts = splitQuery(url.search, false).map(pp => [
+    awsEncode(pp.name, true), awsEncode(pp.hasEq ? pp.value : '', true)
+  ]);
+  if (presign) {
+    qParts.push(['X-Amz-Algorithm', 'AWS4-HMAC-SHA256']);
+    qParts.push(['X-Amz-Credential', awsEncode(o.akid + '/' + scope, true)]);
+    qParts.push(['X-Amz-Date', o.amzDate]);
+    qParts.push(['X-Amz-Expires', String(o.expires || 3600)]);
+    qParts.push(['X-Amz-SignedHeaders', awsEncode(signedHeaders, true)]);
+    if (o.token) qParts.push(['X-Amz-Security-Token', awsEncode(o.token, true)]);
+  }
+  qParts.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
+  const canonicalQuery = qParts.map(x => x[0] + '=' + x[1]).join('&');
+
+  /* S3 signs the path as it stands; everything else encodes it again. */
+  const rawPath = url.pathname || '/';
+  const canonicalUri = s3 ? rawPath : awsEncode(rawPath, false);
+
+  const canonicalRequest = [o.method, canonicalUri, canonicalQuery,
+    canonicalHeaders + '\n' + signedHeaders, payloadHash].join('\n');
+  const canonHash = await sha256Hex(canonicalRequest);
+  const stringToSign = ['AWS4-HMAC-SHA256', o.amzDate, scope, canonHash].join('\n');
+
+  const kDate = await hmacBytes(TE.encode('AWS4' + o.secret), dateStamp);
+  const kRegion = await hmacBytes(kDate, o.region);
+  const kService = await hmacBytes(kRegion, o.service);
+  const kSigning = await hmacBytes(kService, 'aws4_request');
+  const signature = bytesToHexStr(await hmacBytes(kSigning, stringToSign), '');
+
+  return {
+    canonicalRequest: canonicalRequest, canonHash: canonHash, stringToSign: stringToSign,
+    scope: scope, signedHeaders: signedHeaders, signature: signature, rawPath: rawPath,
+    keys: [['kDate', 'HMAC("AWS4" + secret, "' + dateStamp + '")', kDate],
+           ['kRegion', 'HMAC(kDate, "' + o.region + '")', kRegion],
+           ['kService', 'HMAC(kRegion, "' + o.service + '")', kService],
+           ['kSigning', 'HMAC(kService, "aws4_request")', kSigning]],
+    authorization: 'Authorization: AWS4-HMAC-SHA256 Credential=' + o.akid + '/' + scope +
+      ', SignedHeaders=' + signedHeaders + ', Signature=' + signature,
+    presignedUrl: url.origin + canonicalUri + '?' + canonicalQuery + '&X-Amz-Signature=' + signature
+  };
+}
+
 async function runSigV4() {
   const st = $('#sig-status');
   const out = $('#sig-out');
   if (!HAS_CRYPTO) { status(st, 'warn', t('cv.noCrypto')); return; }
 
   const raw = $('#sig-url').value.trim();
-  if (!raw) { status(st, 'info', t('sig.needUrl')); $('#sig-canonical').textContent = ''; $('#sig-sts').textContent = ''; out.textContent = ''; $('#sig-keys').innerHTML = ''; return; }
-  let url;
-  try { url = new URL(raw); } catch (e) { status(st, 'danger', t('insp.invalid', e.message)); return; }
+  if (!raw) {
+    status(st, 'info', t('sig.needUrl'));
+    $('#sig-canonical').textContent = ''; $('#sig-sts').textContent = '';
+    out.textContent = ''; $('#sig-keys').innerHTML = '';
+    return;
+  }
+  try { new URL(raw); } catch (e) { status(st, 'danger', t('insp.invalid', e.message)); return; }
 
   const presign = $('#sig-presign').checked;
-  const s3 = $('#sig-s3').checked;
-  const method = $('#sig-method').value;
-  const region = $('#sig-region').value.trim();
-  const service = $('#sig-service').value.trim();
-  const akid = $('#sig-akid').value.trim();
-  const secret = $('#sig-secret').value;
-  const token = $('#sig-token').value.trim();
-  const body = $('#sig-body').value;
-  const unsigned = $('#sig-payload-mode').value === 'unsigned' || presign;
   let amzDate = $('#sig-date').value.trim();
   if (!/^\d{8}T\d{6}Z$/.test(amzDate)) { amzDate = amzNow(); $('#sig-date').value = amzDate; }
-  const dateStamp = amzDate.slice(0, 8);
-  const scope = dateStamp + '/' + region + '/' + service + '/aws4_request';
 
-  /* headers */
-  const defPorts = { 'http:': '80', 'https:': '443' };
-  const host = url.hostname + (url.port && url.port !== defPorts[url.protocol] ? ':' + url.port : '');
-  const payloadHash = unsigned ? 'UNSIGNED-PAYLOAD' : await sha256Hex(body);
-
-  const headerMap = {};
-  headerMap['host'] = host;
-  if (!presign) {
-    headerMap['x-amz-date'] = amzDate;
-    if (token) headerMap['x-amz-security-token'] = token;
-    if (s3) headerMap['x-amz-content-sha256'] = payloadHash;
-  }
-  parseHeaderLines($('#sig-headers').value).forEach(h => {
-    if (h.name) headerMap[h.name.toLowerCase()] = h.value.replace(/\s+/g, ' ').trim();
+  const r = await sigv4({
+    url: raw, method: $('#sig-method').value, region: $('#sig-region').value.trim(),
+    service: $('#sig-service').value.trim(), akid: $('#sig-akid').value.trim(),
+    secret: $('#sig-secret').value, token: $('#sig-token').value.trim(),
+    body: $('#sig-body').value, amzDate: amzDate, presign: presign, s3: $('#sig-s3').checked,
+    unsigned: $('#sig-payload-mode').value === 'unsigned',
+    expires: parseInt($('#sig-expires').value, 10) || 3600,
+    headers: parseHeaderLines($('#sig-headers').value)
   });
-  const names = Object.keys(headerMap).sort();
-  const canonicalHeaders = names.map(n => n + ':' + headerMap[n] + '\n').join('');
-  const signedHeaders = names.join(';');
 
-  /* query */
-  const qParts = splitQuery(url.search, false).map(pp => [
-    awsEncode(pp.name, true), awsEncode(pp.hasEq ? pp.value : '', true)
-  ]);
-  if (presign) {
-    qParts.push(['X-Amz-Algorithm', 'AWS4-HMAC-SHA256']);
-    qParts.push(['X-Amz-Credential', awsEncode(akid + '/' + scope, true)]);
-    qParts.push(['X-Amz-Date', amzDate]);
-    qParts.push(['X-Amz-Expires', String(parseInt($('#sig-expires').value, 10) || 3600)]);
-    qParts.push(['X-Amz-SignedHeaders', awsEncode(signedHeaders, true)]);
-    if (token) qParts.push(['X-Amz-Security-Token', awsEncode(token, true)]);
-  }
-  qParts.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
-  const canonicalQuery = qParts.map(x => x[0] + '=' + x[1]).join('&');
-
-  /* path: S3 signs the path as it stands, everything else encodes it again */
-  const rawPath = url.pathname || '/';
-  const canonicalUri = s3 ? rawPath : awsEncode(rawPath, false);
-
-  const canonicalRequest = [method, canonicalUri, canonicalQuery, canonicalHeaders + '\n' + signedHeaders, payloadHash].join('\n');
-  const canonHash = await sha256Hex(canonicalRequest);
-  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, canonHash].join('\n');
-
-  const kDate = await hmacBytes(TE.encode('AWS4' + secret), dateStamp);
-  const kRegion = await hmacBytes(kDate, region);
-  const kService = await hmacBytes(kRegion, service);
-  const kSigning = await hmacBytes(kService, 'aws4_request');
-  const signature = bytesToHexStr(await hmacBytes(kSigning, stringToSign), '');
-
-  $('#sig-canonical').textContent = canonicalRequest;
-  $('#sig-canon-hash').textContent = canonHash.slice(0, 16) + '…';
-  $('#sig-sts').textContent = stringToSign;
+  $('#sig-canonical').textContent = r.canonicalRequest;
+  $('#sig-canon-hash').textContent = r.canonHash.slice(0, 16) + '…';
+  $('#sig-sts').textContent = r.stringToSign;
 
   const keys = $('#sig-keys');
   keys.innerHTML = '';
-  [['kDate', 'HMAC("AWS4" + secret, "' + dateStamp + '")', kDate],
-   ['kRegion', 'HMAC(kDate, "' + region + '")', kRegion],
-   ['kService', 'HMAC(kRegion, "' + service + '")', kService],
-   ['kSigning', 'HMAC(kService, "aws4_request")', kSigning]].forEach(row => {
+  r.keys.forEach(row => {
     keys.appendChild(el('dt', null, row[0]));
     const dd = el('dd');
     dd.appendChild(el('div', null, row[1]));
@@ -4874,21 +4964,15 @@ async function runSigV4() {
     keys.appendChild(dd);
   });
   keys.appendChild(el('dt', null, 'signature'));
-  const sigDd = el('dd', null, signature);
+  const sigDd = el('dd', null, r.signature);
   sigDd.style.color = 'var(--accent-text)';
   keys.appendChild(sigDd);
 
-  if (presign) {
-    $('#sig-out-title').textContent = t('sig.presignedUrl');
-    out.textContent = url.origin + canonicalUri + '?' + canonicalQuery + '&X-Amz-Signature=' + signature;
-  } else {
-    $('#sig-out-title').textContent = t('sig.authHeader');
-    out.textContent = 'Authorization: AWS4-HMAC-SHA256 Credential=' + akid + '/' + scope +
-      ', SignedHeaders=' + signedHeaders + ', Signature=' + signature;
-  }
+  $('#sig-out-title').textContent = presign ? t('sig.presignedUrl') : t('sig.authHeader');
+  out.textContent = presign ? r.presignedUrl : r.authorization;
+
   const notes = [];
-  if (!s3 && /%[0-9a-fA-F]{2}/.test(rawPath)) notes.push(t('sig.doubleEncoded'));
-  if (!presign && !headerMap['x-amz-date']) notes.push(t('sig.noDate'));
+  if (!$('#sig-s3').checked && /%[0-9a-fA-F]{2}/.test(r.rawPath)) notes.push(t('sig.doubleEncoded'));
   status(st, notes.length ? 'warn' : 'ok', notes.join(' '));
 }
 
@@ -7362,6 +7446,169 @@ function applyEdition() {
   $('#btn-download').hidden = offline;
   if (offline) $('#edition-link').href = HOME_URL;
 }
+
+/* ======================================================================
+   13. Not failing silently
+   ====================================================================== */
+/* A throw inside a render used to leave the panel showing stale output with
+   no sign anything had gone wrong. Now it says so. */
+function showCrash(where, err) {
+  const box = $('#crash');
+  box.innerHTML = '';
+  const msg = el('span');
+  setNode(msg, t('crash.body', where, String(err && err.message || err)));
+  box.appendChild(msg);
+  const b = el('button', 'btn btn-sm', t('btn.close'));
+  b.type = 'button';
+  b.addEventListener('click', () => { box.hidden = true; });
+  box.appendChild(b);
+  box.hidden = false;
+}
+function guarded(name, fn) {
+  return function () {
+    try {
+      const r = fn.apply(this, arguments);
+      if (r && typeof r.catch === 'function') r.catch(e => { console.error('[urlforge] ' + name, e); showCrash(name, e); });
+      return r;
+    } catch (e) {
+      console.error('[urlforge] ' + name, e);
+      showCrash(name, e);
+    }
+  };
+}
+
+/* ======================================================================
+   14. Self-test — the conformance vectors, run in your browser
+   ====================================================================== */
+const RFC6570_CASES = [
+  ['{var}', { var: 'value' }, 'value'],
+  ['{+path}/here', { path: '/foo/bar' }, '/foo/bar/here'],
+  ['X{#hello}', { hello: 'Hello World!' }, 'X#Hello%20World!'],
+  ['{x,hello,y}', { x: 1024, hello: 'Hello World!', y: 768 }, '1024,Hello%20World%21,768'],
+  ['map?{x,y}', { x: 1024, y: 768 }, 'map?1024,768'],
+  ['{.list*}', { list: ['red', 'green', 'blue'] }, '.red.green.blue'],
+  ['{/list*,path:4}', { list: ['red', 'green', 'blue'], path: '/foo/bar' }, '/red/green/blue/%2Ffoo'],
+  ['{;keys}', { keys: { semi: ';', dot: '.', comma: ',' } }, ';keys=semi,%3B,dot,.,comma,%2C'],
+  ['{?keys*}', { keys: { semi: ';', dot: '.', comma: ',' } }, '?semi=%3B&dot=.&comma=%2C'],
+  ['{&x,y,empty}', { x: 1024, y: 768, empty: '' }, '&x=1024&y=768&empty='],
+  ['{/var:3}', { var: 'value' }, '/val']
+];
+
+async function selfTest() {
+  const rows = [];
+  const add = (key, state, detail) => rows.push({ key: key, state: state, detail: detail });
+  const eq = (key, got, want) => add(key, got === want ? 'pass' : 'fail',
+    got === want ? want : got + '   ≠   ' + want);
+
+  eq('st.pct', pctEncode('kebap çorba', SAFE.component, false), 'kebap%20%C3%A7orba');
+  eq('st.pctBack', pctDecode('kebap%20%C3%A7orba', { plus: false }).value, 'kebap çorba');
+  eq('st.form', pctEncode('a b+c', SAFE.form, true), 'a+b%2Bc');
+  eq('st.b64', bytesToB64(TE.encode('çorba'), true), 'w6dvcmJh');
+  eq('st.b64Back', bytesToText(b64ToBytes('w6dvcmJh'), { lossy: true }).value, 'çorba');
+  eq('st.puny', PUNY.toASCII('münchen.de'), 'xn--mnchen-3ya.de');
+  eq('st.punyBack', PUNY.toUnicode('xn--mnchen-3ya.de'), 'münchen.de');
+  eq('st.normalise', normalizeHref('https://EXAMPLE.com:443/./x/../y?b=2'), 'https://example.com/y?b=2');
+
+  let rfcBad = 0, rfcFirst = '';
+  RFC6570_CASES.forEach(c => {
+    let got;
+    try { got = expandTemplate(c[0], c[1]); } catch (e) { got = 'threw: ' + e.message; }
+    if (got !== c[2]) { rfcBad++; if (!rfcFirst) rfcFirst = c[0] + ' → ' + got + '   ≠   ' + c[2]; }
+  });
+  add('st.rfc6570', rfcBad ? 'fail' : 'pass',
+    rfcBad ? rfcFirst : t('st.ofN', RFC6570_CASES.length));
+
+  if (!HAS_CRYPTO) {
+    add('st.sha', 'skip', t('st.noCrypto'));
+    add('st.hmac', 'skip', t('st.noCrypto'));
+    add('st.sigv4', 'skip', t('st.noCrypto'));
+  } else {
+    eq('st.sha', await sha256Hex('hello'),
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824');
+    eq('st.hmac', bytesToHexStr(await hmacBytes(TE.encode('key'), 'hello', 'SHA-256'), ''),
+      '9307b3b915efb5171ff14d8cb55fbcc798c6c0ef1456d66ded1a6aa723a58b7b');
+    try {
+      const r = await sigv4({
+        url: 'https://example.amazonaws.com/', method: 'GET', region: 'us-east-1',
+        service: 'service', akid: 'AKIDEXAMPLE',
+        secret: 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY',
+        amzDate: '20150830T123600Z', body: '', headers: []
+      });
+      eq('st.sigv4', r.signature, '5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31');
+    } catch (e) { add('st.sigv4', 'fail', e.message); }
+  }
+
+  if (!HAS_BARCODE) add('st.qr', 'skip', t('qr.noDetector'));
+  else {
+    try {
+      const text = 'https://kaandikec.com/urlforge/ çorba';
+      const qr = QR.encode(text);
+      const c = el('canvas');
+      drawQrToCanvas(c, qr, 8, 4, false);
+      const blob = await new Promise(res => c.toBlob(res, 'image/png'));
+      const value = await detectQr(await createImageBitmap(blob));
+      add('st.qr', value === text ? 'pass' : 'fail',
+        value === text ? t('st.qrOk', qr.version) : String(value));
+    } catch (e) { add('st.qr', 'fail', e.message); }
+  }
+
+  const enKeys = Object.keys(I18N.en).length, trKeys = Object.keys(I18N.tr).length;
+  add('st.i18n', enKeys === trKeys ? 'pass' : 'fail', enKeys + ' / ' + trKeys);
+
+  const external = $$('script[src], link[rel="stylesheet"], img[src]').length;
+  add('st.offline', external === 0 ? 'pass' : 'fail', t('st.externalRefs', external));
+
+  const tb = $('#selftest-rows');
+  tb.innerHTML = '';
+  let pass = 0, fail = 0, skip = 0;
+  rows.forEach(r => {
+    if (r.state === 'pass') pass++; else if (r.state === 'fail') fail++; else skip++;
+    const tr = el('tr');
+    const c1 = el('td'); c1.dataset.label = t('selftest.th.result');
+    c1.appendChild(el('span', 'chip ' + (r.state === 'pass' ? 'chip-ok' : r.state === 'fail' ? 'chip-danger' : ''),
+      t('st.' + r.state)));
+    const c2 = el('td', null, t(r.key)); c2.dataset.label = t('selftest.th.check');
+    const c3 = el('td', 'mono', r.detail); c3.dataset.label = t('selftest.th.detail');
+    c3.style.overflowWrap = 'anywhere';
+    tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3);
+    tb.appendChild(tr);
+  });
+  const chip = $('#selftest-score');
+  chip.textContent = pass + ' / ' + (pass + fail) + (skip ? '  (+' + skip + ')' : '');
+  chip.className = 'chip ' + (fail ? 'chip-danger' : 'chip-ok');
+  return { pass: pass, fail: fail, skip: skip };
+}
+
+/* Every render entry point, wrapped once, by name. */
+runCodec = guarded('runCodec', runCodec);
+runInspect = guarded('runInspect', runInspect);
+runCompare = guarded('runCompare', runCompare);
+runBatch = guarded('runBatch', runBatch);
+renderSnippet = guarded('renderSnippet', renderSnippet);
+importCurl = guarded('importCurl', importCurl);
+buildOAuthUrl = guarded('buildOAuthUrl', buildOAuthUrl);
+readCallback = guarded('readCallback', readCallback);
+runSigV4 = guarded('runSigV4', runSigV4);
+runWebhook = guarded('runWebhook', runWebhook);
+runSas = guarded('runSas', runSas);
+parseSas = guarded('parseSas', parseSas);
+runGcs = guarded('runGcs', runGcs);
+runShapes = guarded('runShapes', runShapes);
+runOasTable = guarded('runOasTable', runOasTable);
+runShapeRead = guarded('runShapeRead', runShapeRead);
+runTemplate = guarded('runTemplate', runTemplate);
+runTemplateMatch = guarded('runTemplateMatch', runTemplateMatch);
+runCors = guarded('runCors', runCors);
+runCookies = guarded('runCookies', runCookies);
+runRedirects = guarded('runRedirects', runRedirects);
+runCache = guarded('runCache', runCache);
+runCsp = guarded('runCsp', runCsp);
+runQr = guarded('runQr', runQr);
+renderHar = guarded('renderHar', renderHar);
+loadHar = guarded('loadHar', loadHar);
+buildReference = guarded('buildReference', buildReference);
+openTask = guarded('openTask', openTask);
+selfTest = guarded('selfTest', selfTest);
 
 /* ---- init ---- */
 function init() {

@@ -10,6 +10,8 @@ directly — it works with networking switched off.
 
 Live: **https://kaandikec.com/urlforge/** · Interface in English and Turkish.
 
+[![Test and deploy](https://github.com/dikeckaan/urlforge/actions/workflows/pages.yml/badge.svg)](https://github.com/dikeckaan/urlforge/actions/workflows/pages.yml)
+
 ## Two ways in
 
 **Simple** is what opens first: eight jobs written in plain language, each one a single screen
@@ -192,6 +194,28 @@ jump straight to a tool. A single open job shares as a readable link — `#/enco
 than one opaque blob, and a link pasted into an already-open tab lands rather than doing nothing.
 The last eight things you worked on come back as chips on the start screen.
 
+## Is it right?
+
+urlforge carries its own conformance checks, and they run in two places.
+
+**In your browser.** The last panel of the Reference tab runs them on your machine, with no
+network: the AWS `get-vanilla` test vector, all eleven expansion examples from RFC 6570, a QR code
+encoded and then decoded back through your own browser, known SHA-256 and HMAC digests, punycode
+and percent round-trips, RFC 3986 normalisation, and a check that the two translations carry the
+same keys. If something is wrong in the build you are looking at, that is how you find out.
+
+**In CI.** `npm test` runs the same vectors plus 25 more behavioural checks — the curl importer,
+CORS verdicts, cookie and cache and CSP findings, the HAR reader, deep links, the saved copy, a
+pass over all nine tabs and eleven jobs watching the console, and a 390px overflow sweep — against
+a real browser. Nothing deploys unless they pass.
+
+The page has no dependencies. The test harness has one, Playwright, and it never ships.
+
+```
+npm install && npx playwright install chromium
+npm test
+```
+
 ## Privacy
 
 Nothing leaves the page. There are no analytics, no fonts, no CDN and no requests of any kind.
@@ -204,8 +228,8 @@ to a server, but anyone holding the link can read it — treat a shared link lik
 
 Open `index.html`. That is the whole thing.
 
-For GitHub Pages, the workflow in `.github/workflows/pages.yml` publishes the repository root
-on every push to `main`.
+The workflow in `.github/workflows/pages.yml` tests on every push and pull request, and publishes
+`index.html` on a green run against `main`.
 
 ## Licence
 
