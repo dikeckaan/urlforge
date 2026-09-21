@@ -555,10 +555,13 @@ footer a { color: var(--text-dim); }
   .snippet, .result { font-size: 12px; }
 }
 
-/* A clipboard button earns its place only where there is no keyboard. */
+/* Clipboard and camera buttons earn their place only on a touch device.
+   The media query covers phones; the body class covers the touch laptops
+   and tablets that still report a fine pointer. */
 @media (hover: none) and (pointer: coarse) {
   .pastebtn { display: inline-flex; align-items: center; }
 }
+body.touch .pastebtn { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -1545,8 +1548,14 @@ footer a { color: var(--text-dim); }
         <span class="chip" id="qr-support">—</span>
       </div>
       <div class="panel-body">
-        <p class="hint" data-i18n="qr.readHint">Pick a photo or a screenshot. On a phone this opens the camera, so you can point it at a code and see where it actually leads.</p>
-        <input type="file" id="qr-file" accept="image/*" capture="environment">
+        <p class="hint" data-i18n="qr.readHint">Choose a photo or a screenshot you already have, or point the camera at a code and see where it actually leads.</p>
+        <div class="row">
+          <button type="button" class="btn btn-sm" id="btn-qr-pick" data-i18n="qr.pick">Choose an image</button>
+          <button type="button" class="btn btn-sm pastebtn" id="btn-qr-cam" data-i18n="qr.camera">Use the camera</button>
+          <span class="hint" id="qr-file-name"></span>
+        </div>
+        <input type="file" id="qr-file" accept="image/*" hidden>
+        <input type="file" id="qr-camera" accept="image/*" capture="environment" hidden>
         <div id="qr-read-status"></div>
         <pre class="result" id="qr-read-out" data-empty="—"></pre>
         <div class="row" id="qr-read-actions" hidden>
@@ -1986,7 +1995,8 @@ en: {
   'qr.tooLong': 'Too long for a QR code, even at version 40.',
   'qr.saved': 'Saved as qr.png',
   'qr.read': 'Read a QR code',
-  'qr.readHint': 'Pick a photo or a screenshot. On a phone this opens the camera, so you can point it at a code and see where it actually leads.',
+  'qr.pick': 'Choose an image', 'qr.camera': 'Use the camera',
+  'qr.readHint': 'Choose a photo or a screenshot you already have, or point the camera at a code and see where it actually leads.',
   'qr.supported': 'reader ready', 'qr.unsupported': 'no reader in this browser',
   'qr.noDetector': 'This browser has no built-in barcode reader. Chrome on Android and desktop Chrome do; Safari and Firefox do not yet.',
   'qr.reading': 'Looking\u2026', 'qr.notFound': 'No QR code found in that image.',
@@ -2477,7 +2487,8 @@ tr: {
   'qr.tooLong': 'QR koda sığmayacak kadar uzun, sürüm 40’ta bile.',
   'qr.saved': 'qr.png olarak kaydedildi',
   'qr.read': 'QR kod oku',
-  'qr.readHint': 'Bir fotoğraf ya da ekran görüntüsü seçin. Telefonda kamerayı açar; kodu gösterip gerçekte nereye götürdüğünü görebilirsiniz.',
+  'qr.pick': 'Görselden seç', 'qr.camera': 'Kamerayı kullan',
+  'qr.readHint': 'Galerinizdeki bir fotoğrafı ya da ekran görüntüsünü seçin, ya da kamerayı koda tutup gerçekte nereye götürdüğünü görün.',
   'qr.supported': 'okuyucu hazır', 'qr.unsupported': 'bu tarayıcıda okuyucu yok',
   'qr.noDetector': 'Bu tarayıcıda yerleşik barkod okuyucu yok. Android’de ve masaüstünde Chrome destekler; Safari ve Firefox henüz desteklemiyor.',
   'qr.reading': 'Bakılıyor…', 'qr.notFound': 'Bu görselde QR kod bulunamadı.',
@@ -4537,7 +4548,14 @@ function bind() {
   $('#qr-in').addEventListener('input', runQr);
   $('#qr-dark').addEventListener('change', runQr);
   $('#btn-qr-png').addEventListener('click', saveQrPng);
-  $('#qr-file').addEventListener('change', e => readQrFile(e.target.files && e.target.files[0]));
+  $('#btn-qr-pick').addEventListener('click', () => $('#qr-file').click());
+  $('#btn-qr-cam').addEventListener('click', () => $('#qr-camera').click());
+  ['#qr-file', '#qr-camera'].forEach(sel => $(sel).addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    $('#qr-file-name').textContent = f ? f.name : '';
+    readQrFile(f);
+  }));
   $('#btn-qr-copy').addEventListener('click', () => copy(qrReadValue));
   $('#btn-qr-inspect').addEventListener('click', () => {
     if (!qrReadValue) return;
@@ -7010,7 +7028,16 @@ function buildQrJob(body) {
 
   const readLabel = el('span', 'field-label', t('qr.read'));
   readLabel.style.marginTop = '8px';
-  const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.setAttribute('capture', 'environment');
+  const file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
+  const cam = el('input'); cam.type = 'file'; cam.accept = 'image/*'; cam.hidden = true;
+  cam.setAttribute('capture', 'environment');
+  const pickRow = el('div', 'row');
+  const pickBtn = el('button', 'btn btn-sm', t('qr.pick')); pickBtn.type = 'button';
+  const camBtn = el('button', 'btn btn-sm pastebtn', t('qr.camera')); camBtn.type = 'button';
+  const pickName = el('span', 'hint');
+  pickRow.appendChild(pickBtn); pickRow.appendChild(camBtn); pickRow.appendChild(pickName);
+  pickBtn.addEventListener('click', () => file.click());
+  camBtn.addEventListener('click', () => cam.click());
   const readSt = el('div');
   const readOut = el('pre', 'result'); readOut.dataset.empty = '—';
   const readBar = el('div', 'row'); readBar.hidden = true;
@@ -7019,7 +7046,8 @@ function buildQrJob(body) {
   readBar.appendChild(useBtn); readBar.appendChild(copyBtn);
 
   body.appendChild(inp.wrap); body.appendChild(box); body.appendChild(st); body.appendChild(bar);
-  body.appendChild(readLabel); body.appendChild(file);
+  body.appendChild(readLabel); body.appendChild(pickRow);
+  body.appendChild(file); body.appendChild(cam);
   body.appendChild(readSt); body.appendChild(readOut); body.appendChild(readBar);
 
   let current = null, scanned = '';
@@ -7048,10 +7076,12 @@ function buildQrJob(body) {
       toast(t('qr.saved'));
     }, 'image/png');
   });
-  file.addEventListener('change', async e => {
+  const onPicked = async e => {
     const f = e.target.files && e.target.files[0];
+    e.target.value = '';   /* so picking the same file again still fires */
     readOut.textContent = ''; readBar.hidden = true; scanned = '';
     if (!f) return;
+    pickName.textContent = f.name;
     if (!HAS_BARCODE) { status(readSt, 'warn', t('qr.noDetector')); return; }
     status(readSt, 'info', t('qr.reading'));
     try {
@@ -7062,7 +7092,9 @@ function buildQrJob(body) {
       scanned = value; readOut.textContent = value; readBar.hidden = false;
       status(readSt, 'ok', /^[a-z][a-z0-9+.-]*:/i.test(value) ? t('qr.foundUrl') : t('qr.foundText'));
     } catch (err) { status(readSt, 'danger', t('qr.readFailed', err.message)); }
-  });
+  };
+  file.addEventListener('change', onPicked);
+  cam.addEventListener('change', onPicked);
   useBtn.addEventListener('click', () => { if (scanned) openTask('check', scanned); });
   copyBtn.addEventListener('click', () => copy(scanned));
 
@@ -7318,6 +7350,12 @@ async function downloadCopy() {
   }
 }
 
+function applyTouch() {
+  const coarse = (window.matchMedia && matchMedia('(pointer: coarse)').matches) ||
+                 (navigator.maxTouchPoints || 0) > 0;
+  document.body.classList.toggle('touch', !!coarse);
+}
+
 function applyEdition() {
   const offline = document.documentElement.dataset.edition === 'offline';
   $('#edition-link').hidden = !offline;
@@ -7340,6 +7378,7 @@ function init() {
   });
 
   bind();
+  applyTouch();
   applyEdition();
   renderTaskMenu();
   buildSchemeGrid();

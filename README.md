@@ -73,9 +73,9 @@ only thing urlforge asks you to trust it about.
 
 A byte-mode encoder written from scratch — Reed-Solomon over GF(256), block interleaving, all
 eight masks scored by penalty, versions 1 to 40 — verified by round-tripping its own output back
-through the browser's `BarcodeDetector`. Reading works the same way: pick a photo or a screenshot
-and, on a phone, the file input opens the camera, so you can point it at a code and take the URL
-apart before trusting it.
+through the browser's `BarcodeDetector`. Reading gives you two separate ways in — choose an image
+you already have, or, on a touch device, point the camera at a code — because an input that forces
+the camera is an input that hides your gallery.
 
 ### Batch — and HAR files
 
