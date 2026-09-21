@@ -318,6 +318,13 @@ tr.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .finding strong { font-weight: 600; }
 
 /* ---- 8. Reference ------------------------------------------------------- */
+body.dragging::after {
+  content: attr(data-drop-label);
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border: 2px dashed var(--accent); color: var(--accent-text);
+  font: 16px/1.5 var(--sans); pointer-events: none;
+}
 .qrbox { display: grid; place-items: center; padding: 14px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 .qrbox canvas { max-width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
 .qrbox canvas[hidden] { display: none; }
@@ -873,6 +880,39 @@ footer a { color: var(--text-dim); }
       <div id="batch-status"></div>
     </div>
   </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="har.title">Drop in a .har file</h2>
+      <div class="spacer"></div>
+      <span class="chip" id="har-count">—</span>
+      <input type="text" id="har-filter" style="width:190px" data-i18n-ph="har.filterPh" placeholder="Filter by host or path">
+      <select id="har-only" style="width:auto">
+        <option value="all" data-i18n="har.all">Every request</option>
+        <option value="flagged" data-i18n="har.flagged">Only the ones with something wrong</option>
+      </select>
+      <button type="button" class="btn btn-sm" id="btn-har-csv" data-i18n="har.csv">Export CSV</button>
+    </div>
+    <div class="panel-body">
+      <p class="lede" data-i18n="har.lede">In your browser’s network panel, right-click and “Save all as HAR”. Drop the file here — or anywhere on this page — and every URL in it gets taken apart at once. The file is read in this tab and never sent anywhere.</p>
+      <input type="file" id="har-file" accept=".har,application/json,application/har+json">
+      <div id="har-status"></div>
+      <dl class="kv" id="har-summary" style="grid-template-columns:190px minmax(0,1fr)"></dl>
+    </div>
+    <div class="panel-body tight">
+      <div class="tablewrap" style="max-height:60vh">
+        <table class="stack">
+          <thead><tr>
+            <th style="width:72px" data-i18n="har.th.method">Method</th>
+            <th style="width:64px" data-i18n="har.th.status">Status</th>
+            <th data-i18n="har.th.url">URL</th>
+            <th style="width:30%" data-i18n="insp.findings">Findings</th>
+          </tr></thead>
+          <tbody id="har-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 </div>
 
 <!-- ============================= Request forge ============================ -->
@@ -1214,6 +1254,98 @@ footer a { color: var(--text-dim); }
         <textarea id="cookie-in" rows="4" spellcheck="false"
           placeholder="session=abc123; Path=/; HttpOnly; Secure; SameSite=None"></textarea></label>
       <div id="cookie-out"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="redir.title">Follow a redirect chain</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-redir-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <div class="grid-2">
+        <div style="display:grid;gap:12px">
+          <label class="field"><span class="field-label" data-i18n="redir.start">Where it starts</span>
+            <input type="text" id="redir-start" spellcheck="false" placeholder="https://example.com/a?ref=mail#top"></label>
+          <label class="field"><span class="field-label" data-i18n="redir.method">The method it starts with</span>
+            <select id="redir-method">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option>
+              <option>DELETE</option><option>HEAD</option>
+            </select></label>
+        </div>
+        <label class="field"><span class="field-label" data-i18n="redir.hops">Each hop: status, then Location</span>
+          <textarea id="redir-hops" rows="6" spellcheck="false" placeholder="302 /b&#10;301 https://www.example.com/b&#10;307 /c?x=1&#10;200"></textarea></label>
+      </div>
+      <div id="redir-status"></div>
+      <div class="tablewrap">
+        <table class="stack">
+          <thead><tr>
+            <th style="width:44px">#</th>
+            <th style="width:72px" data-i18n="redir.th.status">Status</th>
+            <th style="width:74px" data-i18n="redir.th.methodCol">Method</th>
+            <th data-i18n="redir.th.url">Where it lands</th>
+          </tr></thead>
+          <tbody id="redir-rows"></tbody>
+        </table>
+      </div>
+      <div class="findings" id="redir-findings"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="cache.title">Will this be cached, and for how long?</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-cache-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <div class="grid-2">
+        <label class="field"><span class="field-label" data-i18n="cache.req">Request headers</span>
+          <textarea id="cache-req" rows="4" spellcheck="false" placeholder="cache-control: max-age=0"></textarea></label>
+        <label class="field"><span class="field-label" data-i18n="cache.res">Response headers</span>
+          <textarea id="cache-res" rows="8" spellcheck="false"
+            placeholder="cache-control: public, max-age=300, s-maxage=86400&#10;date: Mon, 21 Sep 2026 10:00:00 GMT&#10;age: 120&#10;etag: &quot;abc&quot;"></textarea></label>
+      </div>
+      <div class="row">
+        <label class="field" style="flex:0 0 140px"><span class="field-label" data-i18n="cache.status">Status code</span>
+          <input type="text" id="cache-code" value="200" spellcheck="false"></label>
+        <label class="check"><input type="checkbox" id="cache-auth"><span data-i18n="cache.authed">Request carried Authorization</span></label>
+      </div>
+      <div class="grid-2">
+        <div>
+          <span class="field-label" data-i18n="cache.browser">In the browser</span>
+          <div id="cache-browser"></div>
+        </div>
+        <div>
+          <span class="field-label" data-i18n="cache.shared">In a CDN or shared cache</span>
+          <div id="cache-shared"></div>
+        </div>
+      </div>
+      <div class="findings" id="cache-findings"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="csp.title">Content-Security-Policy</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-csp-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <textarea id="csp-in" rows="4" spellcheck="false"
+        placeholder="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.example.com; img-src *"></textarea>
+      <div id="csp-status"></div>
+      <div class="tablewrap">
+        <table class="stack">
+          <thead><tr>
+            <th style="width:210px" data-i18n="csp.th.directive">Directive</th>
+            <th data-i18n="csp.th.sources">Sources</th>
+          </tr></thead>
+          <tbody id="csp-rows"></tbody>
+        </table>
+      </div>
+      <div class="findings" id="csp-findings"></div>
     </div>
   </section>
 </div>
@@ -1574,6 +1706,88 @@ en: {
   'task.cors.d': 'Describe the request and paste the answer. You get a verdict and the exact rule that failed.',
   'f.homograph': '<strong>Mixed writing systems in <code>{0}</code>.</strong> It combines {1}, which is how a look-alike domain passes for the real one. The odd characters: {2}',
   'sc.palette': 'Open the command palette',
+  'redir.title': 'Follow a redirect chain',
+  'redir.start': 'Where it starts', 'redir.method': 'The method it starts with',
+  'redir.hops': 'Each hop: status, then Location',
+  'redir.th.status': 'Status', 'redir.th.methodCol': 'Method', 'redir.th.url': 'Where it lands',
+  'redir.needStart': 'Put the first URL in and list the hops beside it.',
+  'redir.startNote': 'the request as sent',
+  'redir.badLine': 'Line {0} does not start with a status code: <code>{1}</code>',
+  'redir.end': 'A {0} is not a redirect, so this is where the browser stops.',
+  'redir.noLocation': 'A {0} with no <code>Location</code> leaves the browser nowhere to go.',
+  'redir.badLocation': '<code>{0}</code> cannot be resolved into a URL.',
+  'redir.methodChanged': '<strong>{0} rewrites the method.</strong> Your {1} becomes a {2} and the body is dropped \u2014 this is why a form POST silently turns into a GET.',
+  'redir.methodKept': '{0} keeps the method and the body, so the {1} is repeated in full.',
+  'redir.downgrade': '<strong>https drops to http</strong> at <code>{0}</code>. Everything after this point crosses the network in the clear.',
+  'redir.crossOrigin': 'The origin changes from <code>{0}</code> to <code>{1}</code>, so the <code>Authorization</code> header is not carried over and cookies depend on their SameSite.',
+  'redir.queryLost': 'The query <code>{0}</code> is not in the new Location, so it is gone from here on.',
+  'redir.loop': '<strong>Loop.</strong> <code>{0}</code> has already been visited.',
+  'redir.loopNote': 'seen before',
+  'redir.tooMany': '{0} hops. Browsers give up at around 20.',
+  'redir.manyHops': '{0} hops. Each one is a round trip the user waits for.',
+  'redir.result': '{0} hop(s), ending at {1}',
+
+  'cache.title': 'Will this be cached, and for how long?',
+  'cache.req': 'Request headers', 'cache.res': 'Response headers',
+  'cache.status': 'Status code', 'cache.authed': 'Request carried Authorization',
+  'cache.browser': 'In the browser', 'cache.shared': 'In a CDN or shared cache',
+  'cache.noStore': '<code>no-store</code> \u2014 nothing is written down anywhere.',
+  'cache.private': '<code>private</code> \u2014 a shared cache must not keep this.',
+  'cache.authed.no': 'The request carried <code>Authorization</code>, so a shared cache refuses it unless the response says <code>public</code>, <code>s-maxage</code> or <code>must-revalidate</code>.',
+  'cache.varyStar': '<code>Vary: *</code> \u2014 nothing can be reused.',
+  'cache.badCode': 'A {0} is not cacheable by default.',
+  'cache.noLifetime': 'Nothing says how long this stays fresh, so each cache guesses \u2014 and they guess differently.',
+  'cache.noCache': '<code>no-cache</code> \u2014 it may be stored, but it is revalidated on every single use.',
+  'cache.fresh': 'Fresh for another {0} (from <code>{1}</code>, {2} in total).',
+  'cache.stale': 'Already {0} stale (from <code>{1}</code>), so the next use revalidates.',
+  'cache.immutable': '<code>immutable</code> \u2014 not revalidated even on a reload.',
+  'cache.mustRevalidate': '<code>must-revalidate</code> \u2014 once stale it must not be served, even if the server is down.',
+  'cache.swr': '<code>stale-while-revalidate={0}</code> \u2014 stale content is served instantly while a fresh copy is fetched behind it.',
+  'cache.sie': '<code>stale-if-error={0}</code> \u2014 stale content covers for the origin when it fails.',
+  'cache.f.nothing': 'Neither <code>Cache-Control</code> nor <code>Expires</code> is set.',
+  'cache.f.pragma': '<code>Pragma: no-cache</code> is a request header from HTTP/1.0. On a response it does nothing.',
+  'cache.f.noValidator': 'No <code>ETag</code> or <code>Last-Modified</code>, so a stale copy has to be downloaded again in full rather than revalidated with a 304.',
+  'cache.f.weakEtag': 'The <code>ETag</code> is weak, which rules out ranged requests being validated against it.',
+  'cache.f.noCacheMaxAge': '<code>no-cache</code> beside <code>max-age</code>: the age is ignored, every use revalidates.',
+  'cache.f.vary': 'Cached separately per <code>{0}</code>. Each distinct value is its own entry.',
+  'cache.f.reqRevalidate': 'The request itself asks for revalidation, so this is a reload rather than a normal visit.',
+  'cache.f.split': 'Browsers hold it for {0}, shared caches for {1}.',
+
+  'csp.title': 'Content-Security-Policy',
+  'csp.th.directive': 'Directive', 'csp.th.sources': 'Sources',
+  'csp.count': '{0} directive(s).',
+  'csp.f.noDefault': 'No <code>default-src</code>, so anything you did not name is unrestricted.',
+  'csp.f.unsafeInline': '<strong><code>\u0027unsafe-inline\u0027</code> in script-src.</strong> That is the one thing CSP exists to stop.',
+  'csp.f.inlineIgnored': '<code>\u0027unsafe-inline\u0027</code> sits beside a nonce or hash, so CSP level 2 and up ignore it. Older browsers still honour it.',
+  'csp.f.unsafeEval': '<code>\u0027unsafe-eval\u0027</code> allows <code>eval</code> and <code>new Function</code>.',
+  'csp.f.scriptStar': '<code>script-src *</code> allows a script from anywhere.',
+  'csp.f.scriptScheme': 'A bare scheme in script-src allows every host on it.',
+  'csp.f.objectSrc': 'No <code>object-src \u0027none\u0027</code>. Plugin content is a known way around script rules.',
+  'csp.f.baseUri': 'No <code>base-uri</code>. An injected <code>&lt;base&gt;</code> can re-point every relative URL on the page.',
+  'csp.f.frameAncestors': 'No <code>frame-ancestors</code>, so clickjacking is held off only by <code>X-Frame-Options</code>, if that is set at all.',
+  'csp.f.formAction': 'No <code>form-action</code>, so an injected form can post anywhere.',
+  'csp.f.reportUri': '<code>report-uri</code> without <code>report-to</code>. It still works, but it is deprecated.',
+  'csp.f.strictDynamic': '<code>\u0027strict-dynamic\u0027</code> is here, which is the shape a modern policy wants.',
+  'csp.f.upgrade': '<code>upgrade-insecure-requests</code> rewrites http subresources to https.',
+  'csp.f.unknown': '<code>{0}</code> is not a directive any browser knows. A typo here fails silently.',
+  'har.title': 'Drop in a .har file',
+  'har.lede': 'In your browser\u2019s network panel, right-click and \u201cSave all as HAR\u201d. Drop the file here \u2014 or anywhere on this page \u2014 and every URL in it gets taken apart at once. The file is read in this tab and never sent anywhere.',
+  'har.filterPh': 'Filter by host or path',
+  'har.all': 'Every request', 'har.flagged': 'Only the ones with something wrong',
+  'har.csv': 'Export CSV', 'har.drop': 'Let go to read this file',
+  'har.th.method': 'Method', 'har.th.status': 'Status', 'har.th.url': 'URL',
+  'har.reading': 'Reading {0}\u2026',
+  'har.loaded': '{0}: {1} requests taken apart.',
+  'har.notHar': 'That JSON has no <code>log.entries</code>, so it is not a HAR file.',
+  'har.badJson': 'That file could not be read: {0}',
+  'har.truncated': 'Showing the first {0} of {1} matching requests.',
+  'har.nothing': 'Load a HAR file first.',
+  'har.unknownFile': 'urlforge does not know what to do with {0}. Drop a .har file or an image with a QR code.',
+  'har.s.requests': 'Requests', 'har.s.flagged': 'With something worth a look',
+  'har.s.hosts': 'Hosts', 'har.s.params': 'Most common parameters',
+  'har.creds': 'credentials', 'har.secret': 'secret in query', 'har.double': 'double-encoded',
+  'har.space': 'literal space', 'har.plain': 'plain http', 'har.mixed': 'mixed scripts',
+  'har.long': 'very long', 'har.dup': 'repeated param', 'har.bad': 'unreadable URL',
   'mode.simple': 'Simple', 'mode.expert': 'Expert',
   'start.title': 'What do you need to do?',
   'start.lede': 'Pick a job and you get one box to paste into and one answer back. Everything runs in this tab \u2014 nothing is uploaded.',
@@ -1938,6 +2152,88 @@ tr: {
   'task.cors.d': '\u0130ste\u011fi tarif edin, cevab\u0131 yap\u0131\u015ft\u0131r\u0131n. Karar\u0131 ve tak\u0131ld\u0131\u011f\u0131 kural\u0131 g\u00f6r\u00fcn.',
   'f.homograph': '<strong><code>{0}</code> i\u00e7inde kar\u0131\u015f\u0131k yaz\u0131 sistemi.</strong> {1} bir arada kullan\u0131lm\u0131\u015f; benzer g\u00f6r\u00fcnen sahte alan adlar\u0131 tam olarak b\u00f6yle ge\u00e7er. Ayk\u0131r\u0131 karakterler: {2}',
   'sc.palette': 'Komut paletini a\u00e7',
+  'redir.title': 'Y\u00f6nlendirme zincirini takip et',
+  'redir.start': 'Nereden ba\u015fl\u0131yor', 'redir.method': 'Ba\u015flad\u0131\u011f\u0131 metot',
+  'redir.hops': 'Her ad\u0131m: durum kodu, sonra Location',
+  'redir.th.status': 'Durum', 'redir.th.methodCol': 'Metot', 'redir.th.url': 'Nereye d\u00fc\u015f\u00fcyor',
+  'redir.needStart': '\u0130lk adresi girin, ad\u0131mlar\u0131 yan\u0131na yaz\u0131n.',
+  'redir.startNote': 'g\u00f6nderildi\u011fi h\u00e2liyle istek',
+  'redir.badLine': '{0}. sat\u0131r durum koduyla ba\u015flam\u0131yor: <code>{1}</code>',
+  'redir.end': '{0} bir y\u00f6nlendirme de\u011fil, taray\u0131c\u0131 burada durur.',
+  'redir.noLocation': '<code>Location</code> olmadan bir {0}, taray\u0131c\u0131ya gidecek yer b\u0131rakmaz.',
+  'redir.badLocation': '<code>{0}</code> bir adrese \u00e7\u00f6z\u00fclemiyor.',
+  'redir.methodChanged': '<strong>{0} metodu de\u011fi\u015ftirir.</strong> {1} iste\u011finiz {2} olur ve g\u00f6vde d\u00fc\u015fer \u2014 form POST\u2019unun sessizce GET\u2019e d\u00f6nmesinin sebebi budur.',
+  'redir.methodKept': '{0} metodu ve g\u00f6vdeyi korur, {1} aynen tekrarlan\u0131r.',
+  'redir.downgrade': '<strong>https\u2019ten http\u2019ye d\u00fc\u015f\u00fcyor</strong>: <code>{0}</code>. Bu noktadan sonras\u0131 a\u011f\u0131 a\u00e7\u0131k ge\u00e7er.',
+  'redir.crossOrigin': 'K\u00f6ken <code>{0}</code> \u2192 <code>{1}</code> de\u011fi\u015fiyor; <code>Authorization</code> ba\u015fl\u0131\u011f\u0131 ta\u015f\u0131nmaz, \u00e7erezler SameSite\u2019lar\u0131na ba\u011fl\u0131d\u0131r.',
+  'redir.queryLost': 'Yeni Location\u2019da <code>{0}</code> sorgusu yok, buradan sonra kayboluyor.',
+  'redir.loop': '<strong>D\u00f6ng\u00fc.</strong> <code>{0}</code> zaten ziyaret edilmi\u015fti.',
+  'redir.loopNote': 'daha \u00f6nce g\u00f6r\u00fcld\u00fc',
+  'redir.tooMany': '{0} ad\u0131m. Taray\u0131c\u0131lar 20 civar\u0131nda pes eder.',
+  'redir.manyHops': '{0} ad\u0131m. Her biri kullan\u0131c\u0131n\u0131n bekledi\u011fi bir gidi\u015f-d\u00f6n\u00fc\u015f.',
+  'redir.result': '{0} ad\u0131m, biti\u015f: {1}',
+
+  'cache.title': 'Bu \u00f6nbelle\u011fe al\u0131n\u0131r m\u0131, ne kadar?',
+  'cache.req': '\u0130stek ba\u015fl\u0131klar\u0131', 'cache.res': 'Cevap ba\u015fl\u0131klar\u0131',
+  'cache.status': 'Durum kodu', 'cache.authed': '\u0130stek Authorization ta\u015f\u0131yordu',
+  'cache.browser': 'Taray\u0131c\u0131da', 'cache.shared': 'CDN ya da ortak \u00f6nbellekte',
+  'cache.noStore': '<code>no-store</code> \u2014 hi\u00e7bir yere yaz\u0131lmaz.',
+  'cache.private': '<code>private</code> \u2014 ortak bir \u00f6nbellek bunu tutamaz.',
+  'cache.authed.no': '\u0130stek <code>Authorization</code> ta\u015f\u0131yordu; cevap <code>public</code>, <code>s-maxage</code> ya da <code>must-revalidate</code> demedik\u00e7e ortak \u00f6nbellek reddeder.',
+  'cache.varyStar': '<code>Vary: *</code> \u2014 hi\u00e7bir \u015fey yeniden kullan\u0131lamaz.',
+  'cache.badCode': '{0} varsay\u0131lan olarak \u00f6nbelleklenebilir de\u011fil.',
+  'cache.noLifetime': 'Ne kadar taze kalaca\u011f\u0131n\u0131 s\u00f6yleyen bir \u015fey yok; her \u00f6nbellek kendince tahmin eder \u2014 ve farkl\u0131 tahmin ederler.',
+  'cache.noCache': '<code>no-cache</code> \u2014 saklanabilir ama her kullan\u0131mda yeniden do\u011frulan\u0131r.',
+  'cache.fresh': '{0} daha taze (<code>{1}</code> kayna\u011f\u0131ndan, toplam {2}).',
+  'cache.stale': '{0} \u00f6nce bayatlam\u0131\u015f (<code>{1}</code> kayna\u011f\u0131ndan), sonraki kullan\u0131m yeniden do\u011frular.',
+  'cache.immutable': '<code>immutable</code> \u2014 yenileme yap\u0131lsa bile yeniden do\u011frulanmaz.',
+  'cache.mustRevalidate': '<code>must-revalidate</code> \u2014 bayatlad\u0131ktan sonra sunucu \u00e7\u00f6kse bile sunulamaz.',
+  'cache.swr': '<code>stale-while-revalidate={0}</code> \u2014 bayat i\u00e7erik an\u0131nda sunulur, taze kopya arkada \u00e7ekilir.',
+  'cache.sie': '<code>stale-if-error={0}</code> \u2014 kaynak hata verdi\u011finde bayat i\u00e7erik devreye girer.',
+  'cache.f.nothing': 'Ne <code>Cache-Control</code> ne <code>Expires</code> var.',
+  'cache.f.pragma': '<code>Pragma: no-cache</code> HTTP/1.0\u2019dan kalma bir istek ba\u015fl\u0131\u011f\u0131d\u0131r. Cevapta hi\u00e7bir i\u015fe yaramaz.',
+  'cache.f.noValidator': '<code>ETag</code> ya da <code>Last-Modified</code> yok; bayat kopya 304 ile do\u011frulanamaz, ba\u015ftan indirilir.',
+  'cache.f.weakEtag': '<code>ETag</code> zay\u0131f; aral\u0131kl\u0131 isteklerin ona kar\u015f\u0131 do\u011frulanmas\u0131n\u0131 engeller.',
+  'cache.f.noCacheMaxAge': '<code>no-cache</code> ile <code>max-age</code> bir arada: ya\u015f yok say\u0131l\u0131r, her kullan\u0131m yeniden do\u011frular.',
+  'cache.f.vary': '<code>{0}</code> ba\u015f\u0131na ayr\u0131 saklan\u0131r. Her farkl\u0131 de\u011fer ayr\u0131 bir kay\u0131t demektir.',
+  'cache.f.reqRevalidate': '\u0130ste\u011fin kendisi yeniden do\u011frulama istiyor; bu normal bir ziyaret de\u011fil, bir yenileme.',
+  'cache.f.split': 'Taray\u0131c\u0131lar {0}, ortak \u00f6nbellekler {1} tutar.',
+
+  'csp.title': 'Content-Security-Policy',
+  'csp.th.directive': 'Direktif', 'csp.th.sources': 'Kaynaklar',
+  'csp.count': '{0} direktif.',
+  'csp.f.noDefault': '<code>default-src</code> yok; ad\u0131n\u0131 saymad\u0131\u011f\u0131n\u0131z her \u015fey serbest.',
+  'csp.f.unsafeInline': '<strong>script-src i\u00e7inde <code>\u0027unsafe-inline\u0027</code>.</strong> CSP\u2019nin var olma sebebi tam olarak bunu engellemekti.',
+  'csp.f.inlineIgnored': '<code>\u0027unsafe-inline\u0027</code> bir nonce ya da hash\u2019in yan\u0131nda; CSP 2 ve sonras\u0131 onu yok sayar. Eski taray\u0131c\u0131lar h\u00e2l\u00e2 dikkate al\u0131r.',
+  'csp.f.unsafeEval': '<code>\u0027unsafe-eval\u0027</code>, <code>eval</code> ve <code>new Function</code>\u2019a izin verir.',
+  'csp.f.scriptStar': '<code>script-src *</code> her yerden betik y\u00fcklenmesine izin verir.',
+  'csp.f.scriptScheme': 'script-src\u2019te \u00e7\u0131plak bir \u015fema, o \u015femadaki t\u00fcm sunuculara izin verir.',
+  'csp.f.objectSrc': '<code>object-src \u0027none\u0027</code> yok. Eklenti i\u00e7eri\u011fi betik kurallar\u0131n\u0131 a\u015fman\u0131n bilinen yoludur.',
+  'csp.f.baseUri': '<code>base-uri</code> yok. Enjekte edilen bir <code>&lt;base&gt;</code> sayfadaki t\u00fcm g\u00f6reli adresleri ba\u015fka yere y\u00f6nlendirebilir.',
+  'csp.f.frameAncestors': '<code>frame-ancestors</code> yok; clickjacking\u2019i yaln\u0131zca <code>X-Frame-Options</code> tutuyor, o da varsa.',
+  'csp.f.formAction': '<code>form-action</code> yok; enjekte edilen bir form her yere post edebilir.',
+  'csp.f.reportUri': '<code>report-to</code> olmadan <code>report-uri</code>. \u00c7al\u0131\u015f\u0131r ama art\u0131k \u00f6nerilmiyor.',
+  'csp.f.strictDynamic': '<code>\u0027strict-dynamic\u0027</code> var; modern bir politikan\u0131n istedi\u011fi bi\u00e7im bu.',
+  'csp.f.upgrade': '<code>upgrade-insecure-requests</code> http alt kaynaklar\u0131 https\u2019e \u00e7evirir.',
+  'csp.f.unknown': '<code>{0}</code> hi\u00e7bir taray\u0131c\u0131n\u0131n bildi\u011fi bir direktif de\u011fil. Buradaki yaz\u0131m hatas\u0131 sessizce kaybolur.',
+  'har.title': 'Bir .har dosyas\u0131 b\u0131rak',
+  'har.lede': 'Taray\u0131c\u0131n\u0131z\u0131n a\u011f panelinde sa\u011f t\u0131klay\u0131p \u201cSave all as HAR\u201d deyin. Dosyay\u0131 buraya \u2014 ya da sayfan\u0131n herhangi bir yerine \u2014 b\u0131rak\u0131n; i\u00e7indeki her adres tek seferde par\u00e7alar\u0131na ayr\u0131ls\u0131n. Dosya bu sekmede okunur, hi\u00e7bir yere g\u00f6nderilmez.',
+  'har.filterPh': 'Alan ad\u0131 ya da yola g\u00f6re s\u00fcz',
+  'har.all': 'B\u00fct\u00fcn istekler', 'har.flagged': 'Yaln\u0131zca bir sorunu olanlar',
+  'har.csv': 'CSV d\u0131\u015fa aktar', 'har.drop': 'Dosyay\u0131 okumak i\u00e7in b\u0131rak\u0131n',
+  'har.th.method': 'Metot', 'har.th.status': 'Durum', 'har.th.url': 'Adres',
+  'har.reading': '{0} okunuyor\u2026',
+  'har.loaded': '{0}: {1} istek par\u00e7alar\u0131na ayr\u0131ld\u0131.',
+  'har.notHar': 'Bu JSON\u2019da <code>log.entries</code> yok, yani bir HAR dosyas\u0131 de\u011fil.',
+  'har.badJson': 'Bu dosya okunamad\u0131: {0}',
+  'har.truncated': 'E\u015fle\u015fen {1} iste\u011fin ilk {0} tanesi g\u00f6steriliyor.',
+  'har.nothing': '\u00d6nce bir HAR dosyas\u0131 y\u00fckleyin.',
+  'har.unknownFile': 'urlforge {0} ile ne yapaca\u011f\u0131n\u0131 bilmiyor. Bir .har dosyas\u0131 ya da QR i\u00e7eren bir g\u00f6rsel b\u0131rak\u0131n.',
+  'har.s.requests': '\u0130stek', 'har.s.flagged': 'Bak\u0131lmaya de\u011fer bir \u015feyi olan',
+  'har.s.hosts': 'Alan adlar\u0131', 'har.s.params': 'En s\u0131k ge\u00e7en parametreler',
+  'har.creds': 'kimlik bilgisi', 'har.secret': 'sorguda gizli de\u011fer', 'har.double': '\u00e7ift kodlu',
+  'har.space': 'd\u00fcz bo\u015fluk', 'har.plain': 'd\u00fcz http', 'har.mixed': 'kar\u0131\u015f\u0131k yaz\u0131',
+  'har.long': '\u00e7ok uzun', 'har.dup': 'tekrar eden parametre', 'har.bad': 'okunamayan adres',
   'mode.simple': 'Basit', 'mode.expert': 'Uzman',
   'start.title': 'Ne yapmak istiyorsunuz?',
   'start.lede': 'Bir i\u015f se\u00e7in; yap\u0131\u015ft\u0131raca\u011f\u0131n\u0131z tek bir kutu ve tek bir cevap gelsin. Her \u015fey bu sekmede \u00e7al\u0131\u015f\u0131r \u2014 hi\u00e7bir \u015fey g\u00f6nderilmez.',
@@ -3791,6 +4087,30 @@ const SAMPLES = {
   curl: "curl -X POST 'https://api.example.com/v2/orders?ref=web' \\\n  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.sig' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sku\":\"ABC-1\",\"qty\":2,\"note\":\"acele değil\"}'"
 };
 
+/* A readable link per job beats one opaque blob for everything. */
+function jobLink(id, value) {
+  const base = location.href.split('#')[0];
+  const v = value ? '?v=' + bytesToB64(TE.encode(String(value).slice(0, 3000)), true) : '';
+  return base + '#/' + id + v;
+}
+function readDeepLink(hash) {
+  const m = /^#\/([a-z0-9-]+)(?:\?v=([A-Za-z0-9_-]*))?$/.exec(hash);
+  if (!m) return false;
+  const id = m[1];
+  let value = '';
+  if (m[2]) {
+    try { value = bytesToText(b64ToBytes(m[2]), { lossy: true }).value; } catch (e) {}
+  }
+  if (TASKS.some(x => x.id === id)) { showMode('simple'); openTask(id, value); return true; }
+  if (TABS.indexOf(id) >= 0) {
+    showMode('expert'); showTab(id);
+    if (value && id === 'inspect') { $('#insp-in').value = value; runInspect(); }
+    if (value && id === 'codec') { $('#codec-in').value = value; runCodec(); }
+    return true;
+  }
+  return false;
+}
+
 function encodeState() {
   const s = {
     t: activeTab,
@@ -3848,6 +4168,8 @@ function rebuildDynamic() {
   runSigV4(); runWebhook();
   runShapes(); runOasTable(); runShapeRead();
   runCors(); runCookies();
+  runRedirects(); runCache(); runCsp();
+  renderHar();
   renderRecents();
   if (activeTab === 'reference') buildReference();
 }
@@ -3861,8 +4183,18 @@ function bind() {
   $$('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
   $('#btn-download').addEventListener('click', downloadCopy);
   $('#btn-share').addEventListener('click', async () => {
-    const hash = '#s=' + encodeState();
-    const link = location.href.split('#')[0] + hash;
+    /* A single open job gets a readable link; anything else gets the full state. */
+    let link, hash;
+    if (appMode === 'simple' && activeTask) {
+      link = jobLink(activeTask, taskApi && taskApi.primary ? taskApi.primary.value : '');
+      hash = '#' + link.split('#')[1];
+    } else if (appMode === 'expert' && (activeTab === 'inspect' || activeTab === 'codec')) {
+      link = jobLink(activeTab, activeTab === 'inspect' ? $('#insp-in').value : $('#codec-in').value);
+      hash = '#' + link.split('#')[1];
+    } else {
+      hash = '#s=' + encodeState();
+      link = location.href.split('#')[0] + hash;
+    }
     try { history.replaceState(null, '', hash); } catch (e) {}
     await copy(link);
     toast(t('toast.linkCopied'));
@@ -3944,6 +4276,37 @@ function bind() {
   $('#btn-batch-sample').addEventListener('click', () => { $('#batch-in').value = SAMPLES.batch; runBatch(); });
   $('#btn-batch-copy').addEventListener('click', () => copy($('#batch-out').textContent));
   $('#btn-batch-dl').addEventListener('click', downloadBatch);
+  $('#har-file').addEventListener('change', e => loadHar(e.target.files && e.target.files[0]));
+  $('#har-filter').addEventListener('input', renderHar);
+  $('#har-only').addEventListener('change', renderHar);
+  $('#btn-har-csv').addEventListener('click', exportHarCsv);
+
+  /* Dropping a .har anywhere on the page loads it. */
+  let dragDepth = 0;
+  document.addEventListener('dragenter', e => {
+    if (!e.dataTransfer || Array.from(e.dataTransfer.types || []).indexOf('Files') < 0) return;
+    e.preventDefault();
+    dragDepth++;
+    document.body.dataset.dropLabel = t('har.drop');
+    document.body.classList.add('dragging');
+  });
+  document.addEventListener('dragover', e => {
+    if (e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf('Files') >= 0) e.preventDefault();
+  });
+  document.addEventListener('dragleave', () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) document.body.classList.remove('dragging');
+  });
+  document.addEventListener('drop', e => {
+    if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+    e.preventDefault();
+    dragDepth = 0;
+    document.body.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (/\.har$/i.test(file.name) || /json/i.test(file.type)) loadHar(file);
+    else if (/^image\//.test(file.type)) { showMode('expert'); showTab('convert'); readQrFile(file); }
+    else toast(t('har.unknownFile', file.name));
+  });
 
   /* request forge */
   ['#req-method', '#req-url', '#req-body', '#req-body-type', '#req-lang'].forEach(s => {
@@ -4054,6 +4417,35 @@ function bind() {
     $('#cors-res-headers').value = 'access-control-allow-origin: *\naccess-control-allow-methods: GET, POST';
     runCors();
   });
+  ['#redir-start', '#redir-hops'].forEach(x => $(x).addEventListener('input', runRedirects));
+  $('#redir-method').addEventListener('change', runRedirects);
+  $('#btn-redir-sample').addEventListener('click', () => {
+    $('#redir-start').value = 'https://example.com/a?ref=mail#top';
+    $('#redir-method').value = 'POST';
+    $('#redir-hops').value = ['302 /b', '301 https://www.example.com/b', '307 /c?x=1', '200'].join('\n');
+    runRedirects();
+  });
+  ['#cache-req', '#cache-res', '#cache-code'].forEach(x => $(x).addEventListener('input', runCache));
+  $('#cache-auth').addEventListener('change', runCache);
+  $('#btn-cache-sample').addEventListener('click', () => {
+    $('#cache-req').value = '';
+    $('#cache-res').value = [
+      'cache-control: public, max-age=300, s-maxage=86400, stale-while-revalidate=60',
+      'date: ' + new Date(Date.now() - 120000).toUTCString(),
+      'age: 120',
+      'etag: "9f3c"',
+      'vary: Accept-Encoding'
+    ].join('\n');
+    $('#cache-code').value = '200';
+    $('#cache-auth').checked = false;
+    runCache();
+  });
+  $('#csp-in').addEventListener('input', runCsp);
+  $('#btn-csp-sample').addEventListener('click', () => {
+    $('#csp-in').value = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.example.com; " +
+      "style-src 'self' 'unsafe-inline'; img-src * data:; connect-src 'self' https://api.example.com; report-uri /csp";
+    runCsp();
+  });
   $('#cookie-in').addEventListener('input', runCookies);
   $('#btn-cookie-sample').addEventListener('click', () => {
     $('#cookie-in').value = [
@@ -4078,6 +4470,13 @@ function bind() {
     if (e.key === 'ArrowDown') { e.preventDefault(); palIndex = Math.min(palIndex + 1, palItems.length - 1); markPalette(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); palIndex = Math.max(palIndex - 1, 0); markPalette(); }
     else if (e.key === 'Enter') { e.preventDefault(); runPalette(palIndex); }
+  });
+
+  /* A link pasted into the address bar of an open page should still land. */
+  window.addEventListener('hashchange', () => {
+    const h = location.hash;
+    if (h.startsWith('#s=')) { if (applyState(h.slice(3))) rebuildDynamic(); }
+    else if (h.startsWith('#/')) readDeepLink(h);
   });
 
   /* reference */
@@ -4711,6 +5110,396 @@ function runCookies() {
 }
 
 /* ======================================================================
+   10f. Redirects, caching and CSP
+   ====================================================================== */
+const REDIR_CODES = { 301: 1, 302: 1, 303: 1, 307: 1, 308: 1 };
+
+function runRedirects() {
+  const st = $('#redir-status');
+  const tb = $('#redir-rows');
+  const fbox = $('#redir-findings');
+  tb.innerHTML = ''; fbox.innerHTML = '';
+  const start = $('#redir-start').value.trim();
+  if (!start) { status(st, 'info', t('redir.needStart')); return; }
+  let current;
+  try { current = new URL(start); }
+  catch (e) { status(st, 'danger', t('insp.invalid', e.message)); return; }
+
+  let method = $('#redir-method').value;
+  const findings = [];
+  const seen = [current.href];
+  const rows = [{ status: '—', method: method, url: current.href, note: t('redir.startNote') }];
+
+  const lines = $('#redir-hops').value.split('\n').map(l => l.trim()).filter(Boolean);
+  let stopped = false, hops = 0;
+
+  for (let i = 0; i < lines.length && !stopped; i++) {
+    const m = /^(\d{3})\s*(.*)$/.exec(lines[i]);
+    if (!m) { findings.push({ level: 'warn', html: t('redir.badLine', i + 1, lines[i]) }); continue; }
+    const code = Number(m[1]);
+    const loc = m[2].replace(/^location:\s*/i, '').trim();
+
+    if (!REDIR_CODES[code]) {
+      rows.push({ status: String(code), method: method, url: current.href, note: t('redir.end', code) });
+      stopped = true;
+      break;
+    }
+    if (!loc) { findings.push({ level: 'danger', html: t('redir.noLocation', code) }); break; }
+
+    let next;
+    try { next = new URL(loc, current); }
+    catch (e) { findings.push({ level: 'danger', html: t('redir.badLocation', loc) }); break; }
+
+    /* A Location without a fragment inherits the one it came from. */
+    if (!next.hash && current.hash) next.hash = current.hash;
+
+    const before = method;
+    if (code === 303 && method !== 'HEAD') method = 'GET';
+    else if ((code === 301 || code === 302) && method !== 'GET' && method !== 'HEAD') method = 'GET';
+
+    if (method !== before) findings.push({ level: 'warn', html: t('redir.methodChanged', code, before, method) });
+    if (code === 307 || code === 308) findings.push({ level: 'info', html: t('redir.methodKept', code, method) });
+
+    if (current.protocol === 'https:' && next.protocol === 'http:') {
+      findings.push({ level: 'danger', html: t('redir.downgrade', next.href) });
+    }
+    if (next.origin !== current.origin) {
+      findings.push({ level: 'info', html: t('redir.crossOrigin', current.origin, next.origin) });
+    }
+    if (current.search && !next.search) {
+      findings.push({ level: 'warn', html: t('redir.queryLost', current.search.slice(1)) });
+    }
+    if (seen.indexOf(next.href) >= 0) {
+      findings.push({ level: 'danger', html: t('redir.loop', next.href) });
+      rows.push({ status: String(code), method: method, url: next.href, note: t('redir.loopNote') });
+      stopped = true;
+      break;
+    }
+    seen.push(next.href);
+    rows.push({ status: String(code), method: method, url: next.href, note: '' });
+    current = next;
+    hops++;
+  }
+
+  if (hops >= 20) findings.push({ level: 'danger', html: t('redir.tooMany', hops) });
+  else if (hops >= 5) findings.push({ level: 'warn', html: t('redir.manyHops', hops) });
+
+  rows.forEach((r, i) => {
+    const tr = el('tr');
+    const c0 = el('td', 'mono', i === 0 ? '—' : String(i)); c0.dataset.label = '#';
+    const c1 = el('td', 'mono', r.status); c1.dataset.label = t('redir.th.status');
+    const c2 = el('td', 'mono', r.method); c2.dataset.label = t('redir.th.methodCol');
+    const c3 = el('td', 'mono'); c3.dataset.label = t('redir.th.url');
+    c3.style.overflowWrap = 'anywhere';
+    c3.appendChild(document.createTextNode(r.url));
+    if (r.note) { const n = el('div', 'hint', r.note); n.style.marginTop = '3px'; c3.appendChild(n); }
+    tr.appendChild(c0); tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3);
+    tb.appendChild(tr);
+  });
+
+  status(st, findings.some(f => f.level === 'danger') ? 'danger' : findings.length ? 'warn' : 'ok',
+    t('redir.result', hops, current.href));
+  renderFindingList(fbox, sortFindings(findings));
+}
+
+/* ---- caching ---- */
+function parseCacheControl(value) {
+  const out = {};
+  String(value || '').split(',').forEach(part => {
+    const p = part.trim();
+    if (!p) return;
+    const eq = p.indexOf('=');
+    const k = (eq < 0 ? p : p.slice(0, eq)).toLowerCase();
+    out[k] = eq < 0 ? true : p.slice(eq + 1).replace(/^"|"$/g, '');
+  });
+  return out;
+}
+function runCache() {
+  const res = {}, req = {};
+  parseHeaderLines($('#cache-res').value).forEach(h => { res[h.name.toLowerCase()] = h.value; });
+  parseHeaderLines($('#cache-req').value).forEach(h => { req[h.name.toLowerCase()] = h.value; });
+  const cc = parseCacheControl(res['cache-control']);
+  const reqCc = parseCacheControl(req['cache-control']);
+  const code = parseInt($('#cache-code').value, 10) || 200;
+  const authed = $('#cache-auth').checked;
+  const findings = [];
+
+  const num = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
+  const age = num(res['age']) || 0;
+  const dateMs = res['date'] ? Date.parse(res['date']) : NaN;
+  const expiresMs = res['expires'] ? Date.parse(res['expires']) : NaN;
+
+  /* Freshness lifetime, in the order the spec checks it. */
+  let lifetime = null, lifetimeFrom = '';
+  const sMax = num(cc['s-maxage']);
+  const maxAge = num(cc['max-age']);
+  const decide = shared => {
+    if (shared && sMax !== null) return [sMax, 's-maxage'];
+    if (maxAge !== null) return [maxAge, 'max-age'];
+    if (!isNaN(expiresMs) && !isNaN(dateMs)) return [Math.round((expiresMs - dateMs) / 1000), 'Expires'];
+    if (!isNaN(expiresMs)) return [Math.round((expiresMs - Date.now()) / 1000), 'Expires'];
+    if (res['last-modified'] && !isNaN(Date.parse(res['last-modified']))) {
+      const base = isNaN(dateMs) ? Date.now() : dateMs;
+      return [Math.max(0, Math.round((base - Date.parse(res['last-modified'])) / 1000 * 0.1)), 'heuristic'];
+    }
+    return [null, ''];
+  };
+
+  const CACHEABLE_CODES = [200, 203, 204, 206, 300, 301, 308, 404, 405, 410, 414, 501];
+  const verdict = (node, shared) => {
+    node.innerHTML = '';
+    const out = [];
+    const say = (level, html) => out.push({ level: level, html: html });
+
+    if (cc['no-store']) { say('danger', t('cache.noStore')); renderFindingList(node, out); return; }
+    if (shared && cc['private']) { say('danger', t('cache.private')); renderFindingList(node, out); return; }
+    if (shared && authed && !cc['public'] && !cc['s-maxage'] && !cc['must-revalidate']) {
+      say('danger', t('cache.authed.no')); renderFindingList(node, out); return;
+    }
+    if (/^\s*\*/.test(res['vary'] || '')) { say('danger', t('cache.varyStar')); renderFindingList(node, out); return; }
+    if (CACHEABLE_CODES.indexOf(code) < 0) { say('warn', t('cache.badCode', code)); renderFindingList(node, out); return; }
+
+    const [life, from] = decide(shared);
+    lifetime = life; lifetimeFrom = from;
+    if (life === null) { say('warn', t('cache.noLifetime')); renderFindingList(node, out); return; }
+    if (cc['no-cache']) {
+      say('info', t('cache.noCache'));
+      renderFindingList(node, out); return;
+    }
+    const remaining = life - age;
+    if (remaining > 0) say('ok', t('cache.fresh', humanSeconds(remaining), from, humanSeconds(life)));
+    else say('warn', t('cache.stale', humanSeconds(-remaining), from));
+
+    if (cc['immutable']) say('info', t('cache.immutable'));
+    if (cc['must-revalidate']) say('info', t('cache.mustRevalidate'));
+    const swr = num(cc['stale-while-revalidate']);
+    if (swr !== null) say('info', t('cache.swr', humanSeconds(swr)));
+    const sie = num(cc['stale-if-error']);
+    if (sie !== null) say('info', t('cache.sie', humanSeconds(sie)));
+    renderFindingList(node, out);
+  };
+
+  verdict($('#cache-browser'), false);
+  verdict($('#cache-shared'), true);
+
+  if (!res['cache-control'] && !res['expires']) findings.push({ level: 'warn', html: t('cache.f.nothing') });
+  if (res['pragma'] && /no-cache/i.test(res['pragma'])) findings.push({ level: 'info', html: t('cache.f.pragma') });
+  if (!res['etag'] && !res['last-modified']) findings.push({ level: 'warn', html: t('cache.f.noValidator') });
+  else if (res['etag'] && /^W\//.test(res['etag'])) findings.push({ level: 'info', html: t('cache.f.weakEtag') });
+  if (cc['no-cache'] && cc['max-age']) findings.push({ level: 'info', html: t('cache.f.noCacheMaxAge') });
+  if (res['vary'] && !/^\s*\*/.test(res['vary'])) findings.push({ level: 'info', html: t('cache.f.vary', res['vary']) });
+  if (reqCc['no-cache'] || reqCc['max-age'] === '0') findings.push({ level: 'info', html: t('cache.f.reqRevalidate') });
+  if (sMax !== null && maxAge !== null && sMax !== maxAge) findings.push({ level: 'info', html: t('cache.f.split', humanSeconds(maxAge), humanSeconds(sMax)) });
+  renderFindingList($('#cache-findings'), sortFindings(findings));
+}
+function humanSeconds(n) {
+  n = Math.round(n);
+  if (n < 60) return n + ' s';
+  if (n < 3600) return Math.round(n / 60) + ' min';
+  if (n < 86400) return (Math.round(n / 360) / 10) + ' h';
+  return (Math.round(n / 8640) / 10) + ' d';
+}
+
+/* ---- CSP ---- */
+const CSP_FETCH_DIRECTIVES = ['default-src', 'script-src', 'style-src', 'img-src', 'connect-src', 'font-src',
+  'object-src', 'media-src', 'frame-src', 'worker-src', 'manifest-src', 'child-src', 'script-src-elem',
+  'script-src-attr', 'style-src-elem', 'style-src-attr'];
+
+function runCsp() {
+  const st = $('#csp-status');
+  const tb = $('#csp-rows');
+  const fbox = $('#csp-findings');
+  tb.innerHTML = ''; fbox.innerHTML = '';
+  const raw = $('#csp-in').value.trim().replace(/^content-security-policy(-report-only)?:\s*/i, '');
+  if (!raw) { status(st, 'info', ''); return; }
+
+  const directives = {};
+  raw.split(';').forEach(part => {
+    const bits = part.trim().split(/\s+/).filter(Boolean);
+    if (!bits.length) return;
+    directives[bits[0].toLowerCase()] = bits.slice(1);
+  });
+
+  Object.keys(directives).forEach(name => {
+    const tr = el('tr');
+    const c1 = el('td', 'mono', name); c1.dataset.label = t('csp.th.directive');
+    const c2 = el('td'); c2.dataset.label = t('csp.th.sources');
+    const wrap = el('div');
+    wrap.style.display = 'flex'; wrap.style.flexWrap = 'wrap'; wrap.style.gap = '4px';
+    const vals = directives[name];
+    if (!vals.length) wrap.appendChild(el('span', 'chip', t('insp.none')));
+    vals.forEach(v => {
+      let cls = 'chip';
+      if (/^'unsafe-(inline|eval|hashes)'$/i.test(v)) cls = 'chip chip-danger';
+      else if (v === '*' || /^https?:$/i.test(v) || /^data:$/i.test(v)) cls = 'chip chip-warn';
+      else if (/^'(self|none|strict-dynamic)'$/i.test(v)) cls = 'chip chip-ok';
+      else if (/^'(nonce|sha256|sha384|sha512)-/i.test(v)) cls = 'chip chip-violet';
+      wrap.appendChild(el('span', cls, v));
+    });
+    c2.appendChild(wrap);
+    tr.appendChild(c1); tr.appendChild(c2);
+    tb.appendChild(tr);
+  });
+
+  const f = [];
+  const has = d => Object.prototype.hasOwnProperty.call(directives, d);
+  const src = d => directives[d] || (has(d) ? [] : (has('default-src') ? directives['default-src'] : null));
+  const scriptSrc = src('script-src') || [];
+  const hasNonceOrHash = scriptSrc.some(v => /^'(nonce|sha\d{3})-/i.test(v));
+
+  if (!has('default-src')) f.push({ level: 'warn', html: t('csp.f.noDefault') });
+  if (scriptSrc.some(v => /^'unsafe-inline'$/i.test(v))) {
+    f.push(hasNonceOrHash
+      ? { level: 'info', html: t('csp.f.inlineIgnored') }
+      : { level: 'danger', html: t('csp.f.unsafeInline') });
+  }
+  if (scriptSrc.some(v => /^'unsafe-eval'$/i.test(v))) f.push({ level: 'danger', html: t('csp.f.unsafeEval') });
+  if (scriptSrc.indexOf('*') >= 0) f.push({ level: 'danger', html: t('csp.f.scriptStar') });
+  if (scriptSrc.some(v => /^(https?|data):$/i.test(v))) f.push({ level: 'danger', html: t('csp.f.scriptScheme') });
+  const objectSrc = src('object-src');
+  if (!objectSrc || objectSrc.indexOf("'none'") < 0) f.push({ level: 'warn', html: t('csp.f.objectSrc') });
+  if (!has('base-uri')) f.push({ level: 'warn', html: t('csp.f.baseUri') });
+  if (!has('frame-ancestors')) f.push({ level: 'warn', html: t('csp.f.frameAncestors') });
+  if (!has('form-action')) f.push({ level: 'info', html: t('csp.f.formAction') });
+  if (has('report-uri') && !has('report-to')) f.push({ level: 'info', html: t('csp.f.reportUri') });
+  if (scriptSrc.some(v => /^'strict-dynamic'$/i.test(v))) f.push({ level: 'ok', html: t('csp.f.strictDynamic') });
+  if (has('upgrade-insecure-requests')) f.push({ level: 'ok', html: t('csp.f.upgrade') });
+  Object.keys(directives).forEach(d => {
+    if (CSP_FETCH_DIRECTIVES.indexOf(d) < 0 && ['base-uri', 'frame-ancestors', 'form-action', 'sandbox',
+        'report-uri', 'report-to', 'upgrade-insecure-requests', 'require-trusted-types-for', 'trusted-types'].indexOf(d) < 0) {
+      f.push({ level: 'warn', html: t('csp.f.unknown', d) });
+    }
+  });
+  if (!f.length) f.push({ level: 'ok', html: t('cookie.f.clean') });
+
+  status(st, f.some(x => x.level === 'danger') ? 'danger' : f.some(x => x.level === 'warn') ? 'warn' : 'ok',
+    t('csp.count', Object.keys(directives).length));
+  renderFindingList(fbox, sortFindings(f));
+}
+
+/* ======================================================================
+   10g. HAR files — every URL a session touched, taken apart at once
+   ====================================================================== */
+let harEntries = [];
+
+function harFindings(url) {
+  const out = [];
+  const r = parseUrl(url);
+  if (!r.url || r.error) return [{ key: 'har.bad', level: 'danger' }];
+  const u = r.url;
+  const params = splitQuery(u.search, true);
+  if (u.username || u.password) out.push({ key: 'har.creds', level: 'danger' });
+  if (params.some(pp => SECRET_NAMES.test(pp.name) && pp.value)) out.push({ key: 'har.secret', level: 'danger' });
+  if (params.some(pp => /%[0-9a-fA-F]{2}/.test(pp.value))) out.push({ key: 'har.double', level: 'warn' });
+  if (/ /.test(url)) out.push({ key: 'har.space', level: 'warn' });
+  if (u.protocol === 'http:') out.push({ key: 'har.plain', level: 'warn' });
+  if (mixedScriptLabels(safePuny(u.hostname, PUNY.toUnicode)).length) out.push({ key: 'har.mixed', level: 'danger' });
+  if (url.length > 2000) out.push({ key: 'har.long', level: 'warn' });
+  const names = params.map(pp => pp.name);
+  if (names.length !== new Set(names).size) out.push({ key: 'har.dup', level: 'info' });
+  return out;
+}
+
+async function loadHar(file) {
+  const st = $('#har-status');
+  harEntries = [];
+  if (!file) return;
+  status(st, 'info', t('har.reading', file.name));
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const entries = data && data.log && Array.isArray(data.log.entries) ? data.log.entries : null;
+    if (!entries) { status(st, 'danger', t('har.notHar')); renderHar(); return; }
+    harEntries = entries.map(e => ({
+      method: (e.request && e.request.method) || '?',
+      url: (e.request && e.request.url) || '',
+      code: (e.response && e.response.status) || 0,
+      size: (e.response && e.response.bodySize) || 0
+    })).filter(e => e.url);
+    harEntries.forEach(e => { e.findings = harFindings(e.url); });
+    status(st, 'ok', t('har.loaded', file.name, harEntries.length));
+    renderHar();
+    showMode('expert'); showTab('batch');
+  } catch (e) {
+    status(st, 'danger', t('har.badJson', e.message));
+    renderHar();
+  }
+}
+
+function renderHar() {
+  const tb = $('#har-rows');
+  const dl = $('#har-summary');
+  tb.innerHTML = ''; dl.innerHTML = '';
+  $('#har-count').textContent = harEntries.length ? String(harEntries.length) : '—';
+  if (!harEntries.length) return;
+
+  const filter = $('#har-filter').value.trim().toLowerCase();
+  const onlyFlagged = $('#har-only').value === 'flagged';
+  const shown = harEntries.filter(e =>
+    (!filter || e.url.toLowerCase().indexOf(filter) >= 0) &&
+    (!onlyFlagged || e.findings.length));
+
+  const hosts = {}, paramNames = {};
+  harEntries.forEach(e => {
+    const r = parseUrl(e.url);
+    if (r.url) {
+      hosts[r.url.hostname] = (hosts[r.url.hostname] || 0) + 1;
+      splitQuery(r.url.search, true).forEach(pp => { paramNames[pp.name] = (paramNames[pp.name] || 0) + 1; });
+    }
+  });
+  const flagged = harEntries.filter(e => e.findings.length).length;
+  const topHosts = Object.keys(hosts).sort((a, b) => hosts[b] - hosts[a]).slice(0, 6);
+  const topParams = Object.keys(paramNames).sort((a, b) => paramNames[b] - paramNames[a]).slice(0, 10);
+
+  const row = (k, v) => { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v)); };
+  row(t('har.s.requests'), String(harEntries.length));
+  row(t('har.s.flagged'), flagged + ' (' + Math.round(flagged / harEntries.length * 100) + '%)');
+  row(t('har.s.hosts'), Object.keys(hosts).length + ' — ' + topHosts.map(h => h + ' ×' + hosts[h]).join(', '));
+  row(t('har.s.params'), topParams.length ? topParams.map(n => n + ' ×' + paramNames[n]).join(', ') : t('insp.none'));
+
+  shown.slice(0, 500).forEach(e => {
+    const tr = el('tr');
+    const c1 = el('td', 'mono', e.method); c1.dataset.label = t('har.th.method');
+    const c2 = el('td', 'mono', String(e.code || '—')); c2.dataset.label = t('har.th.status');
+    if (e.code >= 400) c2.style.color = 'var(--danger)';
+    const c3 = el('td', 'mono'); c3.dataset.label = t('har.th.url');
+    c3.style.overflowWrap = 'anywhere';
+    const link = el('button', 'backlink', e.url.length > 140 ? e.url.slice(0, 140) + ' …' : e.url);
+    link.type = 'button';
+    link.style.textAlign = 'left';
+    link.style.fontFamily = 'var(--mono)';
+    link.style.fontSize = '12.5px';
+    link.addEventListener('click', () => { showTab('inspect'); $('#insp-in').value = e.url; runInspect(); });
+    c3.appendChild(link);
+    const c4 = el('td'); c4.dataset.label = t('insp.findings');
+    const wrap = el('div');
+    wrap.style.display = 'flex'; wrap.style.flexWrap = 'wrap'; wrap.style.gap = '4px';
+    e.findings.forEach(f => wrap.appendChild(el('span',
+      'chip ' + (f.level === 'danger' ? 'chip-danger' : f.level === 'warn' ? 'chip-warn' : ''), t(f.key))));
+    c4.appendChild(wrap);
+    tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tr.appendChild(c4);
+    tb.appendChild(tr);
+  });
+  if (shown.length > 500) {
+    const tr = el('tr', 'empty-row');
+    const td = el('td', null, t('har.truncated', 500, shown.length)); td.colSpan = 4;
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+}
+
+function exportHarCsv() {
+  if (!harEntries.length) { toast(t('har.nothing')); return; }
+  const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const body = 'method,status,url,findings\n' + harEntries.map(e =>
+    [q(e.method), q(e.code), q(e.url), q(e.findings.map(f => t(f.key)).join(' | '))].join(',')).join('\n');
+  const blob = new Blob([body], { type: 'text/csv;charset=utf-8' });
+  const a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'har-urls.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast(t('batch.dl', 'har-urls.csv'));
+}
+
+/* ======================================================================
    10e. QR codes — a byte-mode encoder, and the browser's own decoder
    ====================================================================== */
 const QR = (function () {
@@ -5161,8 +5950,8 @@ function renderFindingList(node, list) {
   });
 }
 function sortFindings(list) {
-  const rank = { danger: 0, warn: 1, info: 2 };
-  return list.sort((a, b) => rank[a.level] - rank[b.level]);
+  const rank = { danger: 0, warn: 1, info: 2, ok: 3 };
+  return list.sort((a, b) => (rank[a.level] || 0) - (rank[b.level] || 0));
 }
 
 /* ---- job: make a copied URL readable ---- */
@@ -5981,6 +6770,7 @@ function init() {
 
   let restored = false;
   if (location.hash.startsWith('#s=')) restored = applyState(location.hash.slice(3));
+  else if (location.hash.startsWith('#/')) { showMode(savedMode); restored = readDeepLink(location.hash); }
   if (restored) { rebuildDynamic(); toast(t('toast.restored')); }
   else { showTab('codec'); showMode(savedMode); }
 
