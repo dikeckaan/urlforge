@@ -326,6 +326,69 @@ tr.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .snippet .s-key { color: var(--cyan); }
 .snippet .s-com { color: var(--text-muted); }
 
+/* ---- 8b. Simple mode: task menu and task screens ------------------------ */
+body[data-mode="simple"] .tabs { display: none; }
+body[data-mode="simple"] main { max-width: 1060px; }
+
+.start-head { margin: 10px 0 20px; }
+.start-head h1 { font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+.start-head p { color: var(--text-dim); margin-top: 7px; max-width: 62ch; }
+
+.taskgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; }
+.taskcard {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 4px 12px;
+  text-align: left; padding: 16px 18px; cursor: pointer;
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); transition: border-color .12s, background .12s;
+}
+.taskcard:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.taskcard svg { grid-row: 1 / 3; color: var(--accent); margin-top: 2px; }
+.taskcard strong { font-size: 14.5px; font-weight: 600; line-height: 1.35; }
+.taskcard small { color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+
+.taskbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.backlink {
+  padding: 4px 0; background: none; border: 0; cursor: pointer;
+  color: var(--text-muted); font-size: 13px;
+}
+.backlink:hover { color: var(--text); }
+.task-head { margin: 4px 0 4px; }
+.task-head h1 { font-size: 21px; font-weight: 600; letter-spacing: -.015em; }
+.task-head p { color: var(--text-dim); margin-top: 6px; max-width: 68ch; }
+.task-foot { display: flex; justify-content: flex-end; }
+.task-foot button { background: none; border: 0; cursor: pointer; color: var(--text-muted); font-size: 12.5px; padding: 4px 0; }
+.task-foot button:hover { color: var(--accent-text); }
+
+.result {
+  margin: 0; padding: 12px 13px; min-height: 46px;
+  background: var(--bg-code); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font: 13px/1.65 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.result:empty::after { content: attr(data-empty); color: var(--text-muted); }
+.resultbar { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.resultbar .field-label { margin: 0; }
+.choice { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice button {
+  flex: 1 1 190px; text-align: left; padding: 9px 12px; cursor: pointer;
+  background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-dim);
+}
+.choice button:hover { background: var(--bg-hover); color: var(--text); }
+.choice button[aria-pressed="true"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); }
+.choice strong { display: block; font-size: 13px; font-weight: 600; }
+.choice small { display: block; font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+.choice button[aria-pressed="true"] small { color: color-mix(in srgb, var(--accent-text) 72%, transparent); }
+
+.pairs { display: grid; grid-template-columns: minmax(90px, auto) minmax(0, 1fr); gap: 3px 14px; font-size: 13px; }
+.pairs dt { color: var(--text-muted); font-family: var(--mono); font-size: 12.5px; padding: 4px 0; overflow-wrap: anywhere; }
+.pairs dd { margin: 0; padding: 4px 0; font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.pairs dd.void { color: var(--text-muted); font-style: italic; font-family: var(--sans); }
+
+@media (max-width: 680px) {
+  .taskgrid { grid-template-columns: minmax(0, 1fr); }
+  .start-head h1 { font-size: 22px; }
+}
+
 /* ---- 9. Dialogs & toast ------------------------------------------------- */
 dialog {
   width: min(660px, 94vw); padding: 0; color: var(--text);
@@ -413,6 +476,10 @@ footer a { color: var(--text-dim); }
   <div class="spacer"></div>
 
   <div class="topbar-actions">
+    <div class="seg" role="group" aria-label="Interface">
+      <button type="button" data-mode-set="simple" aria-pressed="true" data-i18n="mode.simple">Simple</button>
+      <button type="button" data-mode-set="expert" aria-pressed="false" data-i18n="mode.expert">Expert</button>
+    </div>
     <button type="button" class="btn btn-sm" id="btn-share" data-i18n-title="share.tip" data-i18n="btn.share"
             title="Copy a link that restores this workspace">Copy workspace link</button>
     <div class="seg" role="group" aria-label="Language">
@@ -443,6 +510,31 @@ footer a { color: var(--text-dim); }
 </nav>
 
 <main>
+<!-- ============================ Simple mode =============================== -->
+<div class="view" id="view-start">
+  <div class="start-head">
+    <h1 data-i18n="start.title">What do you need to do?</h1>
+    <p data-i18n="start.lede">Pick a job and you get one box to paste into and one answer back. Everything runs in this tab — nothing is uploaded.</p>
+  </div>
+  <div class="taskgrid" id="taskgrid"></div>
+</div>
+
+<div class="view" id="view-task" hidden>
+  <div class="taskbar">
+    <button type="button" class="backlink" id="btn-task-back" data-i18n="task.back">← All jobs</button>
+  </div>
+  <div class="task-head">
+    <h1 id="task-title"></h1>
+    <p id="task-lede"></p>
+  </div>
+  <section class="panel">
+    <div class="panel-body" id="task-body"></div>
+  </section>
+  <div class="task-foot">
+    <button type="button" id="btn-task-full"></button>
+  </div>
+</div>
+
 <!-- ============================ Encode & decode ============================ -->
 <div class="view" id="view-codec" role="tabpanel" aria-labelledby="tab-codec">
 
@@ -963,6 +1055,7 @@ footer a { color: var(--text-dim); }
       <kbd>Alt + S</kbd> <span data-i18n="sc.swap">Move the output back into the input</span>
       <kbd>Alt + C</kbd> <span data-i18n="sc.copy">Copy the output</span>
       <kbd>Alt + X</kbd> <span data-i18n="sc.clear">Clear the current tool</span>
+      <kbd>Esc</kbd> <span data-i18n="sc.back">Back to the job list (simple mode)</span>
       <kbd>?</kbd> <span data-i18n="sc.help">Open this list</span>
     </div>
   </div>
@@ -989,6 +1082,58 @@ en: {
   'btn.share': 'Copy workspace link',
   'theme.light': 'Light', 'theme.dark': 'Dark', 'theme.system': 'System',
   'shortcuts.tip': 'Keyboard shortcuts',
+  'mode.simple': 'Simple', 'mode.expert': 'Expert',
+  'start.title': 'What do you need to do?',
+  'start.lede': 'Pick a job and you get one box to paste into and one answer back. Everything runs in this tab \u2014 nothing is uploaded.',
+  'task.back': '\u2190 All jobs',
+  'task.full': 'Open the full tool \u2192',
+  'task.input': 'Paste it here',
+  'task.result': 'Result',
+  'task.read.n': 'Make a copied URL readable',
+  'task.read.d': 'Percent escapes turn back into the characters they stand for, however many times the address was encoded.',
+  'task.read.ph': 'https://api.example.com/v2/search?q=kebap%20%C3%A7orba&page=2',
+  'task.read.params': 'What the query is carrying',
+  'task.read.double': 'This had been encoded more than once. It took {0} passes to get back to plain text.',
+  'task.read.plain': 'Nothing was encoded \u2014 this address is already readable as it stands.',
+  'task.encode.n': 'Make a value safe for a URL',
+  'task.encode.d': 'Spaces, Turkish letters and punctuation become escapes so they survive the trip.',
+  'task.encode.ph': 'kebap \u00e7orba & pilav',
+  'task.encode.where': 'Where is it going?',
+  'task.encode.q.n': 'Into the query', 'task.encode.q.d': 'after the ? in an address',
+  'task.encode.f.n': 'Into a form post', 'task.encode.f.d': 'a space becomes +',
+  'task.encode.p.n': 'Into the path', 'task.encode.p.d': 'between the slashes',
+  'task.encode.noop': 'Nothing needed changing \u2014 this value was already safe.',
+  'task.params.n': 'See and edit the query parameters',
+  'task.params.d': 'Every parameter laid out in plain text. Change one and the address rewrites itself.',
+  'task.params.ph': 'https://api.example.com/v2/search?q=kebap%20\u00e7orba&page=2&tags=a&tags=b',
+  'task.params.rebuilt': 'The address, rebuilt',
+  'task.params.add': 'Add one',
+  'task.params.none': 'This address has no query parameters.',
+  'task.check.n': 'Check a URL for problems',
+  'task.check.d': 'Passwords in the address, values encoded twice, repeated parameters \u2014 the things that break at the worst moment.',
+  'task.check.clean': 'Nothing worth flagging in this address.',
+  'task.check.count': '{0} thing(s) worth knowing about.',
+  'task.curl.n': 'Turn a curl command into code',
+  'task.curl.d': 'Paste what \u201cCopy as cURL\u201d gave you and get the same request in the language you work in.',
+  'task.curl.lang': 'Give it to me in',
+  'task.curl.empty': 'Paste a curl command above.',
+  'task.b64.n': 'Show what is inside Base64 or a JWT',
+  'task.b64.d': 'Paste either one \u2014 urlforge works out which it is.',
+  'task.b64.ph': 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.sig   or   w6dvcmJh',
+  'task.b64.isJwt': 'This is a JWT. Its header and payload, decoded:',
+  'task.b64.isB64': 'Decoded from Base64:',
+  'task.b64.bad': 'This is not readable as Base64 or as a JWT.',
+  'task.batch.n': 'Do the same thing to many lines',
+  'task.batch.d': 'One value or address per line. Pick the job once and it runs down the list.',
+  'task.batch.op': 'Do this to every line',
+  'task.op.decode': 'Make it readable', 'task.op.encode': 'Make it safe for a URL',
+  'task.op.host': 'Keep only the site name', 'task.op.normalize': 'Tidy the address',
+  'task.op.slug': 'Turn it into a slug',
+  'task.utils.n': 'Timestamps, hashes and IDs',
+  'task.utils.d': 'The small things you reach for while testing an API.',
+  'task.utils.time': 'Unix time and readable time',
+  'task.utils.hash': 'SHA-256 of some text',
+  'task.utils.gen': 'A fresh ID, every time you ask',
   'tab.codec': 'Encode & decode', 'tab.inspect': 'URL inspector', 'tab.batch': 'Batch',
   'tab.request': 'Request forge', 'tab.convert': 'Convert', 'tab.reference': 'Reference',
   'btn.clear': 'Clear', 'btn.copy': 'Copy', 'btn.copyOut': 'Copy output', 'btn.close': 'Close',
@@ -1161,7 +1306,8 @@ en: {
   'shortcuts.title': 'Keyboard shortcuts',
   'sc.tabs': '+ 1 … 6 — jump to a tool', 'sc.encode': 'Switch to encoding', 'sc.decode': 'Switch to decoding',
   'sc.swap': 'Move the output back into the input', 'sc.copy': 'Copy the output',
-  'sc.clear': 'Clear the current tool', 'sc.help': 'Open this list'
+  'sc.clear': 'Clear the current tool', 'sc.help': 'Open this list',
+  'sc.back': 'Back to the job list (simple mode)'
 },
 tr: {
   'brand.tag': 'URL ve kodlama tezgâhı',
@@ -1171,6 +1317,58 @@ tr: {
   'btn.share': 'Çalışma bağlantısını kopyala',
   'theme.light': 'Açık', 'theme.dark': 'Koyu', 'theme.system': 'Sistem',
   'shortcuts.tip': 'Klavye kısayolları',
+  'mode.simple': 'Basit', 'mode.expert': 'Uzman',
+  'start.title': 'Ne yapmak istiyorsunuz?',
+  'start.lede': 'Bir i\u015f se\u00e7in; yap\u0131\u015ft\u0131raca\u011f\u0131n\u0131z tek bir kutu ve tek bir cevap gelsin. Her \u015fey bu sekmede \u00e7al\u0131\u015f\u0131r \u2014 hi\u00e7bir \u015fey g\u00f6nderilmez.',
+  'task.back': '\u2190 T\u00fcm i\u015fler',
+  'task.full': 'Bu arac\u0131n tamam\u0131n\u0131 a\u00e7 \u2192',
+  'task.input': 'Buraya yap\u0131\u015ft\u0131r\u0131n',
+  'task.result': 'Sonu\u00e7',
+  'task.read.n': 'Kopyalad\u0131\u011f\u0131m adresi okunur h\u00e2le getir',
+  'task.read.d': 'Y\u00fczde kodlar\u0131, ka\u00e7 kez kodlanm\u0131\u015f olursa olsun, temsil ettikleri karakterlere geri d\u00f6ner.',
+  'task.read.ph': 'https://api.ornek.com/v2/ara?q=kebap%20%C3%A7orba&sayfa=2',
+  'task.read.params': 'Sorgu ne ta\u015f\u0131yor',
+  'task.read.double': 'Bu birden fazla kez kodlanm\u0131\u015f. D\u00fcz metne d\u00f6nmesi {0} tur s\u00fcrd\u00fc.',
+  'task.read.plain': 'Kodlanm\u0131\u015f bir \u015fey yok \u2014 bu adres zaten oldu\u011fu gibi okunuyor.',
+  'task.encode.n': 'Bir de\u011feri adrese uygun h\u00e2le getir',
+  'task.encode.d': 'Bo\u015fluk, T\u00fcrk\u00e7e harfler ve noktalama, yolculu\u011fu sa\u011f atlatmak i\u00e7in ka\u00e7\u0131\u015f dizisine d\u00f6n\u00fc\u015f\u00fcr.',
+  'task.encode.ph': 'kebap \u00e7orba & pilav',
+  'task.encode.where': 'Nereye koyacaks\u0131n\u0131z?',
+  'task.encode.q.n': 'Sorgu k\u0131sm\u0131na', 'task.encode.q.d': 'adresteki ? i\u015faretinden sonra',
+  'task.encode.f.n': 'Form g\u00f6nderimine', 'task.encode.f.d': 'bo\u015fluk + olur',
+  'task.encode.p.n': 'Yol k\u0131sm\u0131na', 'task.encode.p.d': 'e\u011fik \u00e7izgilerin aras\u0131na',
+  'task.encode.noop': 'De\u011fi\u015fmesi gereken bir \u015fey yoktu \u2014 bu de\u011fer zaten g\u00fcvenliydi.',
+  'task.params.n': 'Sorgu parametrelerini g\u00f6r ve d\u00fczenle',
+  'task.params.d': 'Her parametre d\u00fcz metin olarak \u00f6n\u00fcn\u00fczde. Birini de\u011fi\u015ftirin, adres kendini yeniden yazs\u0131n.',
+  'task.params.ph': 'https://api.ornek.com/v2/ara?q=kebap%20\u00e7orba&sayfa=2&etiket=a&etiket=b',
+  'task.params.rebuilt': 'Yeniden kurulan adres',
+  'task.params.add': 'Yeni ekle',
+  'task.params.none': 'Bu adreste sorgu parametresi yok.',
+  'task.check.n': 'Bu adreste sorun var m\u0131?',
+  'task.check.d': 'Adreste parola, iki kez kodlanm\u0131\u015f de\u011fer, tekrar eden parametre \u2014 en k\u00f6t\u00fc anda patlayan \u015feyler.',
+  'task.check.clean': 'Bu adreste i\u015faretlenecek bir \u015fey yok.',
+  'task.check.count': 'Bilmeye de\u011fer {0} \u015fey var.',
+  'task.curl.n': 'curl komutunu koda \u00e7evir',
+  'task.curl.d': '\u201cCopy as cURL\u201d \u00e7\u0131kt\u0131s\u0131n\u0131 yap\u0131\u015ft\u0131r\u0131n, ayn\u0131 iste\u011fi kulland\u0131\u011f\u0131n\u0131z dilde al\u0131n.',
+  'task.curl.lang': 'Hangi dilde olsun',
+  'task.curl.empty': 'Yukar\u0131ya bir curl komutu yap\u0131\u015ft\u0131r\u0131n.',
+  'task.b64.n': 'Base64 ya da JWT\u2019nin i\u00e7ini g\u00f6ster',
+  'task.b64.d': '\u0130kisinden birini yap\u0131\u015ft\u0131r\u0131n \u2014 hangisi oldu\u011funu urlforge kendi anlar.',
+  'task.b64.ph': 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.sig   ya da   w6dvcmJh',
+  'task.b64.isJwt': 'Bu bir JWT. Ba\u015fl\u0131\u011f\u0131 ve y\u00fck\u00fc, \u00e7\u00f6z\u00fclm\u00fc\u015f h\u00e2liyle:',
+  'task.b64.isB64': 'Base64\u2019ten \u00e7\u00f6z\u00fcld\u00fc:',
+  'task.b64.bad': 'Bu ne Base64 ne de JWT olarak okunabiliyor.',
+  'task.batch.n': 'Ayn\u0131 i\u015fi \u00e7ok say\u0131da sat\u0131ra yap',
+  'task.batch.d': 'Her sat\u0131ra bir de\u011fer ya da adres. \u0130\u015fi bir kez se\u00e7in, listenin tamam\u0131na uygulans\u0131n.',
+  'task.batch.op': 'Her sat\u0131ra \u015funu yap',
+  'task.op.decode': 'Okunur h\u00e2le getir', 'task.op.encode': 'Adrese uygun h\u00e2le getir',
+  'task.op.host': 'Yaln\u0131zca site ad\u0131n\u0131 b\u0131rak', 'task.op.normalize': 'Adresi derle topla',
+  'task.op.slug': 'Slug\u2019a \u00e7evir',
+  'task.utils.n': 'Zaman damgas\u0131, \u00f6zet ve kimlikler',
+  'task.utils.d': 'API denerken elinizin gitti\u011fi ufak \u015feyler.',
+  'task.utils.time': 'Unix zaman\u0131 ve okunur zaman',
+  'task.utils.hash': 'Bir metnin SHA-256 \u00f6zeti',
+  'task.utils.gen': 'Her istedi\u011finizde taze bir kimlik',
   'tab.codec': 'Kodla & çöz', 'tab.inspect': 'URL incele', 'tab.batch': 'Toplu işlem',
   'tab.request': 'İstek kur', 'tab.convert': 'Dönüştür', 'tab.reference': 'Başvuru',
   'btn.clear': 'Temizle', 'btn.copy': 'Kopyala', 'btn.copyOut': 'Çıktıyı kopyala', 'btn.close': 'Kapat',
@@ -1325,7 +1523,6 @@ tr: {
   'cv.uuid': 'UUID v4', 'cv.hex32': 'Rastgele hex (32 bayt)', 'cv.b64u32': 'Rastgele Base64URL (32 bayt)',
   'cv.nonce': 'Kısa nonce (16 karakter)',
   'cv.noCrypto': 'Bu tarayıcı burada Web Crypto API’yi açmıyor, özet alınamıyor.',
-  'cv.hashing': 'Özet alınıyor…',
 
   'ref.title': 'Hangi karakter nerede sağ kalır', 'ref.filterPh': 'Karaktere ya da ada göre süz',
   'ref.cat.all': 'Bütün karakterler', 'ref.cat.unreserved': 'Unreserved',
@@ -1344,7 +1541,8 @@ tr: {
   'shortcuts.title': 'Klavye kısayolları',
   'sc.tabs': '+ 1 … 6 — araca atla', 'sc.encode': 'Kodlamaya geç', 'sc.decode': 'Çözmeye geç',
   'sc.swap': 'Çıktıyı girdiye geri taşı', 'sc.copy': 'Çıktıyı kopyala',
-  'sc.clear': 'Bu aracı temizle', 'sc.help': 'Bu listeyi aç'
+  'sc.clear': 'Bu aracı temizle', 'sc.help': 'Bu listeyi aç',
+  'sc.back': 'İş listesine dön (basit mod)'
 }
 };
 
@@ -2277,10 +2475,10 @@ const BATCH_OPS = [
   ['decB64u', s => { const r = bytesToText(b64ToBytes(s), { lossy: true }); if (!r.ok) throw new Error(errText(r.err)); return r.value; }],
   ['deepDecode', s => { const l = peelLayers(s, true); return l[l.length - 1]; }],
   ['normalize', s => normalizeHref(s)],
-  ['host', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); return r.url.hostname; }],
-  ['origin', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); return r.url.origin; }],
+  ['host', s => { const r = parseUrl(s); if (r.error || r.empty || r.relative) throw new Error('url'); return r.url.hostname; }],
+  ['origin', s => { const r = parseUrl(s); if (r.error || r.empty || r.relative) throw new Error('url'); return r.url.origin; }],
   ['path', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); return r.url.pathname; }],
-  ['strip', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); const u = r.url; u.search = ''; u.hash = ''; return u.href; }],
+  ['strip', s => { const r = parseUrl(s); if (r.error || r.empty || r.relative) throw new Error('url'); const u = r.url; u.search = ''; u.hash = ''; return u.href; }],
   ['qjson', s => {
     const q = s.indexOf('?') >= 0 ? s.slice(s.indexOf('?') + 1) : s;
     const o = {};
@@ -2423,12 +2621,11 @@ function tokenizeCurl(src) {
   return out;
 }
 
-function importCurl() {
-  const src = $('#curl-in').value.trim();
-  const st = $('#req-status');
-  if (!src) { status(st, 'info', t('req.curlEmpty')); return; }
+/* Reads a curl command into a plain request model; both the expert form and the
+   simple-mode job build on this. */
+function parseCurl(src) {
   const tk = tokenizeCurl(src);
-  if (!/^curl(\.exe)?$/i.test(tk[0] || '')) { status(st, 'danger', t('req.curlNotCurl')); return; }
+  if (!/^curl(\.exe)?$/i.test(tk[0] || '')) return { ok: false, code: 'notCurl' };
 
   let method = '', url = '', body = '', bodyType = 'none';
   const headers = [];
@@ -2467,14 +2664,26 @@ function importCurl() {
     else bodyType = bodyType === 'raw' ? 'raw' : 'form';
   }
   if (!method) method = body ? 'POST' : 'GET';
+  if (!METHODS.includes(method)) method = 'GET';
 
-  $('#req-method').value = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(method) ? method : 'GET';
-  $('#req-url').value = url;
-  reqHeaders = headers;
-  $('#req-body-type').value = bodyType;
-  $('#req-body').value = body;
+  return { ok: true, method: method, url: url, headers: headers, body: body, bodyType: bodyType };
+}
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+
+function importCurl() {
+  const src = $('#curl-in').value.trim();
+  const st = $('#req-status');
+  if (!src) { status(st, 'info', t('req.curlEmpty')); return; }
+  const r = parseCurl(src);
+  if (!r.ok) { status(st, 'danger', t('req.curlNotCurl')); return; }
+
+  $('#req-method').value = r.method;
+  $('#req-url').value = r.url;
+  reqHeaders = r.headers;
+  $('#req-body-type').value = r.bodyType;
+  $('#req-body').value = r.body;
   renderHeaderRows(); renderSnippet();
-  status(st, 'ok', t('req.imported', headers.length, body ? t('req.withBody') : ''));
+  status(st, 'ok', t('req.imported', r.headers.length, r.body ? t('req.withBody') : ''));
 }
 
 const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
@@ -2790,18 +2999,8 @@ function cvJwt() {
   const out = $('#cv-jwt-out');
   const v = $('#cv-jwt').value.trim().replace(/^Bearer\s+/i, '').replace(/\s+/g, '');
   if (!v) { out.textContent = ''; return; }
-  const parts = v.split('.');
-  if (parts.length === 5) { out.textContent = t('cv.jwt.jwe'); return; }
-  if (parts.length !== 3) { out.textContent = t('cv.jwt.shape', parts.length); return; }
-  try {
-    const dec = p => JSON.parse(bytesToText(b64ToBytes(p), { lossy: true }).value);
-    const header = dec(parts[0]), payload = dec(parts[1]);
-    const lines = ['// header', JSON.stringify(header, null, 2), '', '// payload', JSON.stringify(payload, null, 2)];
-    ['iat', 'nbf', 'exp'].forEach(k => {
-      if (typeof payload[k] === 'number') lines.push('// ' + k + ' → ' + new Date(payload[k] * 1000).toISOString());
-    });
-    out.textContent = lines.join('\n');
-  } catch (e) { out.textContent = t('cv.jwt.bad', e.message); }
+  const sum = jwtSummary(v);
+  out.textContent = sum === null ? t('cv.jwt.shape', v.split('.').length) : sum;
 }
 
 /* ======================================================================
@@ -2887,10 +3086,10 @@ function showTab(name) {
   if (TABS.indexOf(name) < 0) name = 'codec';
   activeTab = name;
   TABS.forEach(id => {
-    $('#view-' + id).hidden = (id !== name);
+    $('#view-' + id).hidden = (id !== name) || appMode !== 'expert';
     $('#tab-' + id).setAttribute('aria-selected', String(id === name));
   });
-  if (name === 'reference') buildReference();
+  if (name === 'reference' && appMode === 'expert') buildReference();
 }
 
 const SAMPLES = {
@@ -2907,7 +3106,10 @@ function encodeState() {
     c: { i: $('#codec-in').value.slice(0, 4000), s: codecScheme, d: codecDir },
     u: $('#insp-in').value.slice(0, 4000),
     b: { i: $('#batch-in').value.slice(0, 4000), o: $('#batch-op').value },
-    r: { m: $('#req-method').value, u: $('#req-url').value, h: reqHeaders, b: $('#req-body').value.slice(0, 4000), bt: $('#req-body-type').value, l: $('#req-lang').value }
+    r: { m: $('#req-method').value, u: $('#req-url').value, h: reqHeaders, b: $('#req-body').value.slice(0, 4000), bt: $('#req-body-type').value, l: $('#req-lang').value },
+    m: appMode,
+    k: activeTask,
+    tv: (taskApi && taskApi.primary) ? String(taskApi.primary.value).slice(0, 4000) : ''
   };
   return bytesToB64(TE.encode(JSON.stringify(s)), true);
 }
@@ -2931,10 +3133,18 @@ function applyState(str) {
     if (s.r.l) $('#req-lang').value = s.r.l;
   }
   showTab(s.t || 'codec');
+  if (s.m === 'expert') showMode('expert');
+  else {
+    showMode('simple');
+    if (s.k && TASKS.some(x => x.id === s.k)) openTask(s.k, s.tv || '');
+    else closeTask();
+  }
   return true;
 }
 
 function rebuildDynamic() {
+  renderTaskMenu();
+  if (activeTask) openTask(activeTask, (taskApi && taskApi.primary) ? taskApi.primary.value : '');
   buildSchemeGrid();
   buildBatchOps();
   renderHeaderRows();
@@ -2961,6 +3171,11 @@ function bind() {
     await copy(link);
     toast(t('toast.linkCopied'));
   });
+
+  /* mode and jobs */
+  $$('[data-mode-set]').forEach(b => b.addEventListener('click', () => showMode(b.dataset.modeSet)));
+  $('#btn-task-back').addEventListener('click', closeTask);
+  $('#btn-task-full').addEventListener('click', openFullTool);
 
   /* tabs */
   TABS.forEach(id => $('#tab-' + id).addEventListener('click', () => showTab(id)));
@@ -3087,9 +3302,13 @@ function bind() {
   document.addEventListener('keydown', e => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '');
     if (e.key === '?' && !typing) { e.preventDefault(); $('#dlg-shortcuts').showModal(); return; }
+    if (e.key === 'Escape' && appMode === 'simple' && activeTask && !document.querySelector('dialog[open]')) {
+      e.preventDefault(); closeTask(); return;
+    }
     if (!e.altKey || e.ctrlKey || e.metaKey) return;
     const n = Number(e.key);
-    if (n >= 1 && n <= TABS.length) { e.preventDefault(); showTab(TABS[n - 1]); return; }
+    if (n >= 1 && n <= TABS.length) { e.preventDefault(); showMode('expert'); showTab(TABS[n - 1]); return; }
+    if (appMode !== 'expert') return;
     const k = e.key.toLowerCase();
     if (k === 'e' || k === 'd') {
       e.preventDefault(); showTab('codec');
@@ -3108,10 +3327,516 @@ function bind() {
   });
 }
 
+/* ======================================================================
+   11. Simple mode — one job, one box, one answer
+   ====================================================================== */
+let appMode = 'simple';
+let activeTask = null;
+let taskApi = null;
+
+const ICON = {
+  eye:      ['M2.2 12S6 5.8 12 5.8 21.8 12 21.8 12 18 18.2 12 18.2 2.2 12 2.2 12Z', 'M12 9.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8Z'],
+  lock:     ['M7.5 10V7.6a4.5 4.5 0 0 1 9 0V10', 'M5.5 10h13v10h-13z'],
+  sliders:  ['M4 7.5h7M15 7.5h5M4 16.5h5M13 16.5h7', 'M13 7.5a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM7 16.5a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z'],
+  alert:    ['M12 3.6 2.8 20h18.4L12 3.6Z', 'M12 9.8v4.4M12 17.3h.01'],
+  terminal: ['M3 5.5h18v13H3z', 'M7 10l2.6 2.5L7 15M13 15.4h4.5'],
+  braces:   ['M9.6 4.6c-2 0-1.8 2.9-1.8 4.3s-.6 2.6-2.1 3.1c1.5.5 2.1 1.7 2.1 3.1s-.2 4.3 1.8 4.3', 'M14.4 4.6c2 0 1.8 2.9 1.8 4.3s.6 2.6 2.1 3.1c-1.5.5-2.1 1.7-2.1 3.1s.2 4.3-1.8 4.3'],
+  list:     ['M4 6.5h16M4 12h16M4 17.5h10'],
+  clock:    ['M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 0 0 0-17.2Z', 'M12 7.6V12l3 1.9']
+};
+function icon(paths, size) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', size || 20); svg.setAttribute('height', size || 20);
+  svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.7');
+  svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  paths.forEach(d => {
+    const pa = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pa.setAttribute('d', d); svg.appendChild(pa);
+  });
+  return svg;
+}
+
+/* ---- small builders shared by the jobs ---- */
+function areaField(id, labelKey, phKey, rows) {
+  const wrap = el('label', 'field');
+  wrap.appendChild(el('span', 'field-label', t(labelKey)));
+  const ta = el('textarea');
+  ta.id = id; ta.rows = rows || 3; ta.spellcheck = false;
+  ta.setAttribute('autocapitalize', 'off'); ta.setAttribute('autocorrect', 'off');
+  if (phKey) ta.placeholder = t(phKey);
+  wrap.appendChild(ta);
+  return { wrap: wrap, ta: ta };
+}
+function resultBlock(id, labelKey, getText) {
+  const box = el('div');
+  const bar = el('div', 'resultbar');
+  bar.appendChild(el('span', 'field-label', t(labelKey || 'task.result')));
+  bar.appendChild(el('div', 'spacer'));
+  const b = el('button', 'btn btn-sm btn-primary', t('btn.copy'));
+  b.type = 'button';
+  b.addEventListener('click', () => copy(getText()));
+  bar.appendChild(b);
+  const pre = el('pre', 'result');
+  pre.id = id; pre.dataset.empty = '—'; pre.tabIndex = 0;
+  box.appendChild(bar); box.appendChild(pre);
+  return { box: box, pre: pre };
+}
+function renderFindingList(node, list) {
+  node.innerHTML = '';
+  list.forEach(f => {
+    const row = el('div', 'finding');
+    const dot = el('span', 'dot');
+    dot.style.background = f.level === 'danger' ? 'var(--danger)' : f.level === 'warn' ? 'var(--warn)' : 'var(--accent)';
+    const b = el('div'); setNode(b, f.html);
+    row.appendChild(dot); row.appendChild(b);
+    node.appendChild(row);
+  });
+}
+function sortFindings(list) {
+  const rank = { danger: 0, warn: 1, info: 2 };
+  return list.sort((a, b) => rank[a.level] - rank[b.level]);
+}
+
+/* ---- job: make a copied URL readable ---- */
+function buildRead(body) {
+  const inp = areaField('t-read-in', 'task.input', 'task.read.ph', 3);
+  const st = el('div');
+  const res = resultBlock('t-read-out', 'task.result', () => res.pre.textContent);
+  const pwrap = el('div');
+  pwrap.appendChild(el('span', 'field-label', t('task.read.params')));
+  const pairs = el('dl', 'pairs');
+  pwrap.appendChild(pairs);
+  body.appendChild(inp.wrap); body.appendChild(st); body.appendChild(res.box); body.appendChild(pwrap);
+
+  const run = () => {
+    const v = inp.ta.value.trim();
+    pairs.innerHTML = ''; pwrap.hidden = true;
+    if (!v) { res.pre.textContent = ''; status(st, 'info', ''); return; }
+    const layers = peelLayers(v, true);
+    res.pre.textContent = layers[layers.length - 1];
+    status(st, layers.length > 1 ? 'ok' : 'info',
+      layers.length > 1 ? t('task.read.double', layers.length - 1) : t('task.read.plain'));
+    const r = parseUrl(v);
+    if (r.url) {
+      const ps = splitQuery(r.url.search, true);
+      if (ps.length) {
+        pwrap.hidden = false;
+        ps.forEach(pp => {
+          pairs.appendChild(el('dt', null, pp.name));
+          const deep = peelLayers(pp.value, true);
+          const val = deep[deep.length - 1];
+          const dd = el('dd', null, val);
+          if (!val) { dd.className = 'void'; dd.textContent = t('insp.none'); }
+          pairs.appendChild(dd);
+        });
+      }
+    }
+  };
+  inp.ta.addEventListener('input', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#insp-in', value: inp.ta.value }) };
+}
+
+/* ---- job: make a value safe for a URL ---- */
+function buildEncode(body) {
+  const inp = areaField('t-enc-in', 'task.input', 'task.encode.ph', 3);
+  const wl = el('div');
+  wl.appendChild(el('span', 'field-label', t('task.encode.where')));
+  const choice = el('div', 'choice');
+  let where = 'q';
+  [['q', 'task.encode.q'], ['f', 'task.encode.f'], ['p', 'task.encode.p']].forEach(pair => {
+    const b = el('button'); b.type = 'button'; b.dataset.where = pair[0];
+    b.appendChild(el('strong', null, t(pair[1] + '.n')));
+    b.appendChild(el('small', null, t(pair[1] + '.d')));
+    b.setAttribute('aria-pressed', String(pair[0] === where));
+    b.addEventListener('click', () => {
+      where = pair[0];
+      Array.from(choice.children).forEach(c => c.setAttribute('aria-pressed', String(c.dataset.where === where)));
+      run();
+    });
+    choice.appendChild(b);
+  });
+  wl.appendChild(choice);
+  const st = el('div');
+  const res = resultBlock('t-enc-out', 'task.result', () => res.pre.textContent);
+  body.appendChild(inp.wrap); body.appendChild(wl); body.appendChild(res.box); body.appendChild(st);
+
+  const run = () => {
+    const v = inp.ta.value;
+    if (!v) { res.pre.textContent = ''; status(st, 'info', ''); return; }
+    const out = where === 'f' ? pctEncode(v, SAFE.form, true)
+              : pctEncode(v, where === 'p' ? SAFE.unreserved : SAFE.component, false);
+    res.pre.textContent = out;
+    status(st, out === v ? 'ok' : 'info', out === v ? t('task.encode.noop') : '');
+  };
+  inp.ta.addEventListener('input', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#codec-in', value: inp.ta.value }) };
+}
+
+/* ---- job: see and edit the query parameters ---- */
+function buildParams(body) {
+  const inp = areaField('t-par-in', 'task.input', 'task.params.ph', 2);
+  const st = el('div');
+  const tblWrap = el('div', 'panel tablewrap');
+  const tbl = el('table'); const tb = el('tbody');
+  tbl.appendChild(tb); tblWrap.appendChild(tbl);
+  const bar = el('div', 'row');
+  const addBtn = el('button', 'btn btn-sm', t('task.params.add')); addBtn.type = 'button';
+  bar.appendChild(addBtn);
+  const res = resultBlock('t-par-out', 'task.params.rebuilt', () => res.pre.textContent);
+  body.appendChild(inp.wrap); body.appendChild(st); body.appendChild(tblWrap);
+  body.appendChild(bar); body.appendChild(res.box);
+
+  let list = [], base = null, rel = false;
+
+  const rebuild = () => {
+    if (!base) { res.pre.textContent = ''; return; }
+    const u = new URL(base.href);
+    const q = buildQuery(list, false);
+    u.search = q ? '?' + q : '';
+    res.pre.textContent = rel ? u.href.slice(REL_BASE.length - 1) : u.href;
+  };
+  const rows = () => {
+    tb.innerHTML = '';
+    if (!list.length) {
+      const tr = el('tr', 'empty-row'); const td = el('td', null, t('task.params.none'));
+      td.colSpan = 3; tr.appendChild(td); tb.appendChild(tr); return;
+    }
+    list.forEach((pp, i) => {
+      const tr = el('tr');
+      const tdN = el('td'); tdN.style.width = '32%';
+      const inN = el('input'); inN.type = 'text'; inN.value = pp.name; inN.placeholder = t('insp.th.name');
+      inN.addEventListener('input', () => { pp.name = inN.value; rebuild(); });
+      tdN.appendChild(inN); tr.appendChild(tdN);
+      const tdV = el('td');
+      const inV = el('input'); inV.type = 'text'; inV.value = pp.value; inV.placeholder = t('insp.th.value');
+      inV.addEventListener('input', () => { pp.value = inV.value; pp.hasEq = true; rebuild(); });
+      tdV.appendChild(inV); tr.appendChild(tdV);
+      const tdX = el('td'); tdX.style.width = '34px';
+      const bx = el('button', 'btn btn-icon btn-sm', '✕'); bx.type = 'button'; bx.title = t('btn.remove');
+      bx.addEventListener('click', () => { list.splice(i, 1); rows(); rebuild(); });
+      tdX.appendChild(bx); tr.appendChild(tdX);
+      tb.appendChild(tr);
+    });
+  };
+  addBtn.addEventListener('click', () => {
+    if (!base) return;
+    list.push({ name: 'new', value: '', rawName: 'new', rawValue: '', hasEq: true });
+    rows(); rebuild();
+  });
+  const run = () => {
+    const v = inp.ta.value.trim();
+    if (!v) { base = null; list = []; rows(); res.pre.textContent = ''; status(st, 'info', ''); return; }
+    const r = parseUrl(v);
+    if (r.error || r.empty) { base = null; list = []; rows(); res.pre.textContent = ''; status(st, 'danger', t('insp.invalid', r.error || '')); return; }
+    base = r.url; rel = r.relative;
+    list = splitQuery(base.search, true);
+    status(st, 'info', '');
+    rows(); rebuild();
+  };
+  inp.ta.addEventListener('input', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#insp-in', value: inp.ta.value }) };
+}
+
+/* ---- job: check a URL for problems ---- */
+function buildCheck(body) {
+  const inp = areaField('t-chk-in', 'task.input', 'insp.ph', 3);
+  const st = el('div');
+  const listNode = el('div', 'findings');
+  body.appendChild(inp.wrap); body.appendChild(st); body.appendChild(listNode);
+
+  const run = () => {
+    const raw = inp.ta.value.trim();
+    listNode.innerHTML = '';
+    if (!raw) { status(st, 'info', ''); return; }
+    const r = parseUrl(raw);
+    if (r.error || r.empty) { status(st, 'danger', t('insp.invalid', r.error || '')); return; }
+    const fs = sortFindings(findings(r.url, raw, splitQuery(r.url.search, true)));
+    status(st, fs.length ? (fs.some(f => f.level === 'danger') ? 'danger' : 'warn') : 'ok',
+      fs.length ? t('task.check.count', fs.length) : t('task.check.clean'));
+    renderFindingList(listNode, fs);
+  };
+  inp.ta.addEventListener('input', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#insp-in', value: inp.ta.value }) };
+}
+
+/* ---- job: turn a curl command into code ---- */
+const SNIPPET_LANGS = [['curl', 'curl'], ['httpie', 'HTTPie'], ['fetch', 'JavaScript fetch'], ['axios', 'axios'],
+                       ['python', 'Python requests'], ['go', 'Go net/http'], ['powershell', 'PowerShell'], ['php', 'PHP curl']];
+function buildCurlTask(body) {
+  const inp = areaField('t-curl-in', 'task.input', 'req.curlPh', 6);
+  const row = el('div', 'row');
+  row.appendChild(el('span', 'field-label', t('task.curl.lang')));
+  const sel = el('select'); sel.style.width = 'auto';
+  SNIPPET_LANGS.forEach(l => { const o = el('option', null, l[1]); o.value = l[0]; sel.appendChild(o); });
+  sel.value = 'fetch';
+  row.appendChild(sel);
+  const st = el('div');
+  let text = '';
+  const res = resultBlock('t-curl-out', 'task.result', () => text);
+  res.pre.className = 'snippet';
+  body.appendChild(inp.wrap); body.appendChild(row); body.appendChild(st); body.appendChild(res.box);
+
+  const run = () => {
+    const v = inp.ta.value.trim();
+    text = '';
+    if (!v) { res.pre.textContent = ''; status(st, 'info', t('task.curl.empty')); return; }
+    const r = parseCurl(v);
+    if (!r.ok) { res.pre.textContent = ''; status(st, 'danger', t('req.curlNotCurl')); return; }
+    const headers = r.headers.slice();
+    if (r.body && !headers.some(h => /^content-type$/i.test(h.name))) {
+      if (r.bodyType === 'json') headers.push({ name: 'Content-Type', value: 'application/json' });
+      else if (r.bodyType === 'form') headers.push({ name: 'Content-Type', value: 'application/x-www-form-urlencoded' });
+    }
+    text = snippet({ method: r.method, url: r.url, headers: headers, body: r.body, bodyType: r.bodyType }, sel.value);
+    res.pre.innerHTML = highlightSnippet(text);
+    status(st, 'ok', t('req.imported', r.headers.length, r.body ? t('req.withBody') : ''));
+  };
+  inp.ta.addEventListener('input', run);
+  sel.addEventListener('change', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#curl-in', value: inp.ta.value, then: importCurl }) };
+}
+
+/* ---- job: show what is inside Base64 or a JWT ---- */
+function jwtSummary(v) {
+  const parts = v.split('.');
+  if (parts.length === 5) return t('cv.jwt.jwe');
+  if (parts.length !== 3) return null;
+  try {
+    const dec = x => JSON.parse(bytesToText(b64ToBytes(x), { lossy: true }).value);
+    const header = dec(parts[0]), payload = dec(parts[1]);
+    const lines = ['// header', JSON.stringify(header, null, 2), '', '// payload', JSON.stringify(payload, null, 2)];
+    ['iat', 'nbf', 'exp'].forEach(k => {
+      if (typeof payload[k] === 'number') lines.push('// ' + k + ' → ' + new Date(payload[k] * 1000).toISOString());
+    });
+    return lines.join('\n');
+  } catch (e) { return t('cv.jwt.bad', e.message); }
+}
+function buildB64(body) {
+  const inp = areaField('t-b64-in', 'task.input', 'task.b64.ph', 3);
+  const st = el('div');
+  const res = resultBlock('t-b64-out', 'task.result', () => res.pre.textContent);
+  body.appendChild(inp.wrap); body.appendChild(st); body.appendChild(res.box);
+
+  const run = () => {
+    const v = inp.ta.value.trim().replace(/^Bearer\s+/i, '').replace(/\s+/g, '');
+    if (!v) { res.pre.textContent = ''; status(st, 'info', ''); return; }
+    const jwt = jwtSummary(v);
+    if (jwt !== null) { res.pre.textContent = jwt; status(st, 'ok', t('task.b64.isJwt')); return; }
+    try {
+      const out = bytesToText(b64ToBytes(v), { lossy: true });
+      res.pre.textContent = out.value;
+      status(st, 'ok', t('task.b64.isB64'));
+    } catch (e) {
+      res.pre.textContent = '';
+      status(st, 'danger', t('task.b64.bad'));
+    }
+  };
+  inp.ta.addEventListener('input', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#cv-jwt', value: inp.ta.value }) };
+}
+
+/* ---- job: do the same thing to many lines ---- */
+const SIMPLE_OPS = [
+  ['decode', s => { const l = peelLayers(s, true); return l[l.length - 1]; }],
+  ['encode', s => pctEncode(s, SAFE.component, false)],
+  ['host', s => { const r = parseUrl(s); if (!r.url || r.relative) throw new Error('url'); return r.url.hostname; }],
+  ['normalize', s => { const r = parseUrl(s); if (!r.url || r.relative) throw new Error('url'); return normalizeHref(s); }],
+  ['slug', s => slugify(s)]
+];
+function buildBatchTask(body) {
+  const row = el('div', 'row');
+  row.appendChild(el('span', 'field-label', t('task.batch.op')));
+  const sel = el('select'); sel.style.width = 'auto';
+  SIMPLE_OPS.forEach(o => { const opt = el('option', null, t('task.op.' + o[0])); opt.value = o[0]; sel.appendChild(opt); });
+  row.appendChild(sel);
+  const inp = areaField('t-bt-in', 'task.input', 'batch.ph', 10);
+  const res = resultBlock('t-bt-out', 'task.result', () => res.pre.textContent);
+  const st = el('div');
+  body.appendChild(row); body.appendChild(inp.wrap); body.appendChild(res.box); body.appendChild(st);
+
+  const run = () => {
+    const lines = inp.ta.value.split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) { res.pre.textContent = ''; status(st, 'info', ''); return; }
+    const op = SIMPLE_OPS.find(o => o[0] === sel.value) || SIMPLE_OPS[0];
+    let fail = 0;
+    const out = lines.map(l => {
+      try { return op[1](l.trim()); } catch (e) { fail++; return '⚠'; }
+    });
+    res.pre.textContent = out.join('\n');
+    status(st, fail ? 'warn' : 'ok', t('batch.done', lines.length, fail));
+  };
+  inp.ta.addEventListener('input', run);
+  sel.addEventListener('change', run);
+  return { primary: inp.ta, run: run, carry: () => ({ target: '#batch-in', value: inp.ta.value }) };
+}
+
+/* ---- job: timestamps, hashes and IDs ---- */
+function buildUtils(body) {
+  /* time */
+  const timeWrap = el('div');
+  timeWrap.appendChild(el('span', 'field-label', t('task.utils.time')));
+  const timeRow = el('div', 'grid-2');
+  const epoch = el('input'); epoch.type = 'text'; epoch.placeholder = t('cv.epoch');
+  const iso = el('input'); iso.type = 'text'; iso.placeholder = 'ISO 8601';
+  timeRow.appendChild(epoch); timeRow.appendChild(iso);
+  timeWrap.appendChild(timeRow);
+  const readable = el('p', 'hint'); readable.style.marginTop = '7px';
+  timeWrap.appendChild(readable);
+  let tGuard = false;
+  const syncTime = src => {
+    if (tGuard) return; tGuard = true;
+    let d = null;
+    if (src === 'epoch') { const n = Number(epoch.value.trim()); if (Number.isFinite(n) && epoch.value.trim()) d = new Date(n > 1e11 ? n : n * 1000); }
+    else if (src === 'iso') { if (iso.value.trim()) d = new Date(iso.value.trim()); }
+    else d = new Date();
+    if (!d || isNaN(d.getTime())) { readable.textContent = epoch.value || iso.value ? t('cv.badTime') : ''; tGuard = false; return; }
+    if (src !== 'epoch') epoch.value = String(Math.floor(d.getTime() / 1000));
+    if (src !== 'iso') iso.value = d.toISOString();
+    readable.textContent = d.toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-GB', { dateStyle: 'full', timeStyle: 'long' });
+    tGuard = false;
+  };
+  epoch.addEventListener('input', () => syncTime('epoch'));
+  iso.addEventListener('input', () => syncTime('iso'));
+  const nowBtn = el('button', 'btn btn-sm', t('cv.now')); nowBtn.type = 'button';
+  nowBtn.addEventListener('click', () => syncTime('now'));
+  const nowRow = el('div', 'row'); nowRow.style.marginTop = '8px'; nowRow.appendChild(nowBtn);
+  timeWrap.appendChild(nowRow);
+
+  /* hash */
+  const hashWrap = el('div');
+  hashWrap.appendChild(el('span', 'field-label', t('task.utils.hash')));
+  const hIn = el('textarea'); hIn.rows = 2; hIn.spellcheck = false;
+  const hOut = el('pre', 'result'); hOut.dataset.empty = '—'; hOut.style.marginTop = '8px';
+  hashWrap.appendChild(hIn); hashWrap.appendChild(hOut);
+  let hSeq = 0;
+  hIn.addEventListener('input', async () => {
+    const v = hIn.value;
+    if (!v) { hOut.textContent = ''; return; }
+    if (!HAS_CRYPTO) { hOut.textContent = t('cv.noCrypto'); return; }
+    const seq = ++hSeq;
+    const d = await crypto.subtle.digest('SHA-256', TE.encode(v));
+    if (seq !== hSeq) return;
+    hOut.textContent = bytesToHexStr(new Uint8Array(d), '');
+  });
+
+  /* generators */
+  const genWrap = el('div');
+  const genBar = el('div', 'resultbar');
+  genBar.appendChild(el('span', 'field-label', t('task.utils.gen')));
+  genBar.appendChild(el('div', 'spacer'));
+  const regen = el('button', 'btn btn-sm', t('cv.regen')); regen.type = 'button';
+  genBar.appendChild(regen);
+  const genList = el('dl', 'kv');
+  genList.style.gridTemplateColumns = '172px minmax(0, 1fr)';
+  genWrap.appendChild(genBar); genWrap.appendChild(genList);
+  const fillGen = () => {
+    genList.innerHTML = '';
+    const uuid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : bytesToHexStr(randomBytes(16), '');
+    [[t('cv.uuid'), uuid], [t('cv.b64u32'), bytesToB64(randomBytes(32), true)]].forEach(pair => {
+      genList.appendChild(el('dt', null, pair[0]));
+      const dd = el('dd');
+      dd.style.display = 'flex'; dd.style.gap = '8px'; dd.style.alignItems = 'center';
+      const sp = el('span', null, pair[1]); sp.style.overflowWrap = 'anywhere';
+      const cb = el('button', 'btn btn-sm', t('btn.copy')); cb.type = 'button'; cb.style.flex = 'none';
+      cb.addEventListener('click', () => copy(pair[1]));
+      dd.appendChild(sp); dd.appendChild(cb);
+      genList.appendChild(dd);
+    });
+  };
+  regen.addEventListener('click', fillGen);
+
+  body.appendChild(timeWrap); body.appendChild(hashWrap); body.appendChild(genWrap);
+  const run = () => { syncTime('now'); fillGen(); };
+  return { primary: hIn, run: run, carry: () => ({ target: '#cv-hash-in', value: hIn.value }) };
+}
+
+const TASKS = [
+  { id: 'read',   icon: ICON.eye,      build: buildRead,       full: 'inspect' },
+  { id: 'encode', icon: ICON.lock,     build: buildEncode,     full: 'codec' },
+  { id: 'params', icon: ICON.sliders,  build: buildParams,     full: 'inspect' },
+  { id: 'check',  icon: ICON.alert,    build: buildCheck,      full: 'inspect' },
+  { id: 'curl',   icon: ICON.terminal, build: buildCurlTask,   full: 'request' },
+  { id: 'b64',    icon: ICON.braces,   build: buildB64,        full: 'convert' },
+  { id: 'batch',  icon: ICON.list,     build: buildBatchTask,  full: 'batch' },
+  { id: 'utils',  icon: ICON.clock,    build: buildUtils,      full: 'convert' }
+];
+
+function renderTaskMenu() {
+  const grid = $('#taskgrid');
+  grid.innerHTML = '';
+  TASKS.forEach(task => {
+    const b = el('button', 'taskcard'); b.type = 'button';
+    b.appendChild(icon(task.icon));
+    b.appendChild(el('strong', null, t('task.' + task.id + '.n')));
+    b.appendChild(el('small', null, t('task.' + task.id + '.d')));
+    b.addEventListener('click', () => openTask(task.id));
+    grid.appendChild(b);
+  });
+}
+
+function openTask(id, presetValue) {
+  const task = TASKS.find(x => x.id === id);
+  if (!task) { closeTask(); return; }
+  activeTask = id;
+  $('#task-title').textContent = t('task.' + id + '.n');
+  $('#task-lede').textContent = t('task.' + id + '.d');
+  const body = $('#task-body');
+  body.innerHTML = '';
+  taskApi = task.build(body);
+  $('#btn-task-full').textContent = t('task.full');
+  $('#view-start').hidden = true;
+  $('#view-task').hidden = false;
+  if (presetValue != null && taskApi.primary) taskApi.primary.value = presetValue;
+  taskApi.run();
+  if (taskApi.primary && !presetValue) taskApi.primary.focus();
+  window.scrollTo(0, 0);
+}
+function closeTask() {
+  activeTask = null; taskApi = null;
+  $('#view-task').hidden = true;
+  $('#view-start').hidden = false;
+  window.scrollTo(0, 0);
+}
+function openFullTool() {
+  const task = TASKS.find(x => x.id === activeTask);
+  if (!task) return;
+  const carry = taskApi && taskApi.carry ? taskApi.carry() : null;
+  showMode('expert');
+  showTab(task.full);
+  if (carry && carry.value && $(carry.target)) {
+    $(carry.target).value = carry.value;
+    if (carry.then) carry.then();
+    else $(carry.target).dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  window.scrollTo(0, 0);
+}
+
+function showMode(mode) {
+  appMode = mode === 'expert' ? 'expert' : 'simple';
+  document.body.dataset.mode = appMode;
+  $$('[data-mode-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modeSet === appMode)));
+  try { localStorage.setItem('urlforge.mode', appMode); } catch (e) {}
+  if (appMode === 'expert') {
+    $('#view-start').hidden = true;
+    $('#view-task').hidden = true;
+    showTab(activeTab);
+  } else {
+    TABS.forEach(id => { $('#view-' + id).hidden = true; });
+    $('#view-start').hidden = !!activeTask;
+    $('#view-task').hidden = !activeTask;
+  }
+}
+
 /* ---- init ---- */
 function init() {
-  let savedTheme = 'system', savedLang = null;
-  try { savedTheme = localStorage.getItem('urlforge.theme') || 'system'; savedLang = localStorage.getItem('urlforge.lang'); } catch (e) {}
+  let savedTheme = 'system', savedLang = null, savedMode = 'simple';
+  try {
+    savedTheme = localStorage.getItem('urlforge.theme') || 'system';
+    savedLang = localStorage.getItem('urlforge.lang');
+    savedMode = localStorage.getItem('urlforge.mode') || 'simple';
+  } catch (e) {}
   applyTheme(savedTheme);
   window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
     let m = 'system'; try { m = localStorage.getItem('urlforge.theme') || 'system'; } catch (e) {}
@@ -3119,6 +3844,7 @@ function init() {
   });
 
   bind();
+  renderTaskMenu();
   buildSchemeGrid();
   buildBatchOps();
   renderHeaderRows();
@@ -3131,7 +3857,7 @@ function init() {
   let restored = false;
   if (location.hash.startsWith('#s=')) restored = applyState(location.hash.slice(3));
   if (restored) { rebuildDynamic(); toast(t('toast.restored')); }
-  else showTab('codec');
+  else { showTab('codec'); showMode(savedMode); }
 
   runCodec(); runInspect(); renderSnippet(); buildOAuthUrl();
 }

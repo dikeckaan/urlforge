@@ -10,6 +10,19 @@ directly — it works with networking switched off.
 
 Live: **https://kaandikec.com/urlforge/** · Interface in English and Turkish.
 
+## Two ways in
+
+**Simple** is what opens first: eight jobs written in plain language, each one a single screen
+with one box to paste into and one answer to copy. No scheme to choose, no direction to set, no
+jargon — and every job links through to the full tool with whatever you had typed carried over.
+
+> Make a copied URL readable · Make a value safe for a URL · See and edit the query parameters ·
+> Check a URL for problems · Turn a curl command into code · Show what is inside Base64 or a JWT ·
+> Do the same thing to many lines · Timestamps, hashes and IDs
+
+**Expert** is the six-tab workbench below, unchanged and one click away in the top bar. The
+choice is remembered.
+
 ## What it does
 
 ### Encode & decode
