@@ -1,0 +1,3144 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>urlforge — URL and encoding workbench</title>
+<meta name="description" content="Offline, single-file workbench for URL encoding, percent-decoding, query editing, batch conversion and request snippets. Nothing leaves your browser.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M9 10.5h6a4.5 4.5 0 0 1 0 9h-3' stroke='%234f9cf9' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M23 21.5h-6a4.5 4.5 0 0 1 0-9h3' stroke='%23b083f0' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* =========================================================================
+   urlforge — styles
+   1. Tokens   2. Base   3. Shell   4. Controls   5. Panels
+   6. Codec    7. Tables 8. Reference 9. Dialogs  10. Responsive
+   ========================================================================= */
+
+/* ---- 1. Tokens ---------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+  --bg:            #0d1117;
+  --bg-elevated:   #131920;
+  --bg-panel:      #161c24;
+  --bg-code:       #0b0f15;
+  --bg-inset:      #10151c;
+  --bg-hover:      #1d2530;
+  --border:        #242c38;
+  --border-strong: #313c4b;
+  --text:          #e6edf3;
+  --text-dim:      #a9b6c6;
+  --text-muted:    #7c8b9d;
+  --accent:        #4f9cf9;
+  --accent-soft:   rgba(79, 156, 249, .14);
+  --accent-text:   #8cc0ff;
+  --ok:            #3fb950;
+  --ok-soft:       rgba(63, 185, 80, .14);
+  --warn:          #d9a021;
+  --warn-soft:     rgba(217, 160, 33, .14);
+  --danger:        #f4685f;
+  --danger-soft:   rgba(244, 104, 95, .14);
+  --violet:        #b083f0;
+  --violet-soft:   rgba(176, 131, 240, .14);
+  --cyan:          #4fd1c5;
+  --cyan-soft:     rgba(79, 209, 197, .14);
+  --focus:         #6bb0ff;
+  --shadow:        0 10px 30px rgba(0, 0, 0, .45);
+  --radius:        10px;
+  --radius-sm:     7px;
+  --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  --header-h: 54px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg:            #f2f5f9;
+  --bg-elevated:   #ffffff;
+  --bg-panel:      #ffffff;
+  --bg-code:       #f7f9fc;
+  --bg-inset:      #eef2f7;
+  --bg-hover:      #e7edf5;
+  --border:        #d9e0e9;
+  --border-strong: #c3ccd8;
+  --text:          #16202b;
+  --text-dim:      #3d4a59;
+  --text-muted:    #5f6f80;
+  --accent:        #1361d6;
+  --accent-soft:   rgba(19, 97, 214, .10);
+  --accent-text:   #0d4ea8;
+  --ok:            #1a7f37;
+  --ok-soft:       rgba(26, 127, 55, .11);
+  --warn:          #9a6700;
+  --warn-soft:     rgba(154, 103, 0, .12);
+  --danger:        #c1392f;
+  --danger-soft:   rgba(193, 57, 47, .11);
+  --violet:        #7b3fd1;
+  --violet-soft:   rgba(123, 63, 209, .11);
+  --cyan:          #0f7c72;
+  --cyan-soft:     rgba(15, 124, 114, .11);
+  --focus:         #1361d6;
+  --shadow:        0 10px 30px rgba(23, 43, 77, .13);
+}
+
+/* ---- 2. Base ------------------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-y: scroll;
+}
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent-text); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+::selection { background: var(--accent-soft); }
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ---- 3. Shell ----------------------------------------------------------- */
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 14px;
+  height: var(--header-h); padding: 0 14px;
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: baseline; gap: 9px; flex: none; }
+.brand svg { display: block; align-self: center; }
+.brand-name { font-family: var(--mono); font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+.brand-name b { color: var(--accent); font-weight: 650; }
+.brand-tag { color: var(--text-muted); font-size: 12px; }
+.spacer { flex: 1 1 auto; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+.badge-offline {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  background: var(--ok-soft); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
+  color: var(--ok); font-size: 12px; white-space: nowrap;
+}
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 var(--ok); animation: pulse 2.4s infinite; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 6px rgba(63,185,80,0); } 100% { box-shadow: 0 0 0 0 rgba(63,185,80,0); } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } * { transition: none !important; } }
+
+.tabs {
+  position: sticky; top: var(--header-h); z-index: 30;
+  display: flex; gap: 2px; padding: 0 14px;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: none; padding: 11px 15px 10px; background: none; border: 0;
+  border-bottom: 2px solid transparent; color: var(--text-muted);
+  cursor: pointer; white-space: nowrap; font-size: 13.5px;
+}
+.tab:hover { color: var(--text-dim); }
+.tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+
+main { max-width: 1520px; margin: 0 auto; padding: 18px 14px 60px; }
+.view { display: grid; gap: 14px; }
+.lede { color: var(--text-dim); max-width: 74ch; }
+.lede code { font-family: var(--mono); font-size: 12.5px; background: var(--bg-inset); padding: 1px 5px; border-radius: 4px; }
+
+/* ---- 4. Controls -------------------------------------------------------- */
+.btn {
+  padding: 6px 11px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--bg-elevated); border: 1px solid var(--border-strong); color: var(--text-dim);
+  transition: background .12s, color .12s, border-color .12s; font-size: 13px;
+}
+.btn:hover { background: var(--bg-hover); color: var(--text); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); }
+.btn-primary:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); color: var(--text); }
+.btn-icon { padding: 6px 7px; display: inline-grid; place-items: center; }
+.btn-sm { padding: 3px 8px; font-size: 12px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.seg button {
+  padding: 5px 10px; background: var(--bg-elevated); border: 0; cursor: pointer;
+  color: var(--text-muted); font-size: 12.5px; border-left: 1px solid var(--border);
+}
+.seg button:first-child { border-left: 0; }
+.seg button:hover { background: var(--bg-hover); color: var(--text-dim); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); }
+
+label.field { display: block; }
+.field-label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; background: var(--bg-inset); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  padding: 8px 10px; min-width: 0;
+}
+input[type="text"], textarea { font-family: var(--mono); font-size: 13px; }
+textarea { resize: vertical; line-height: 1.6; }
+input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: .75; }
+select { cursor: pointer; }
+.check { display: inline-flex; align-items: center; gap: 7px; color: var(--text-dim); font-size: 12.5px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 14px; height: 14px; }
+
+/* ---- 5. Panels ---------------------------------------------------------- */
+.panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); }
+.panel-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+}
+.panel-head h2, .panel-head h3 { font-size: 13.5px; font-weight: 600; }
+.panel-head .spacer { min-width: 6px; }
+.panel-body { padding: 14px; display: grid; gap: 12px; }
+.panel-body.tight { padding: 0; }
+.hint { color: var(--text-muted); font-size: 12px; }
+.grid-2, .grid-3, .grid-4 { display: grid; gap: 12px; align-items: start; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.notice { border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12.5px; border: 1px solid; line-height: 1.55; }
+.notice-ok     { background: var(--ok-soft);     border-color: color-mix(in srgb, var(--ok) 32%, transparent);     color: var(--ok); }
+.notice-warn   { background: var(--warn-soft);   border-color: color-mix(in srgb, var(--warn) 32%, transparent);   color: var(--warn); }
+.notice-danger { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 32%, transparent); color: var(--danger); }
+.notice-info   { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--accent-text); }
+.notice code { font-family: var(--mono); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px;
+  border-radius: 999px; font-size: 11.5px; font-family: var(--mono); white-space: nowrap;
+  background: var(--bg-inset); border: 1px solid var(--border); color: var(--text-dim);
+}
+.chip-ok     { background: var(--ok-soft);     border-color: color-mix(in srgb, var(--ok) 30%, transparent);     color: var(--ok); }
+.chip-warn   { background: var(--warn-soft);   border-color: color-mix(in srgb, var(--warn) 30%, transparent);   color: var(--warn); }
+.chip-danger { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 30%, transparent); color: var(--danger); }
+.chip-accent { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--accent-text); }
+.chip-violet { background: var(--violet-soft); border-color: color-mix(in srgb, var(--violet) 30%, transparent); color: var(--violet); }
+.chip-cyan   { background: var(--cyan-soft);   border-color: color-mix(in srgb, var(--cyan) 30%, transparent);   color: var(--cyan); }
+
+/* ---- 6. Codec workbench ------------------------------------------------- */
+.io { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.io textarea { min-height: 190px; }
+.io-out {
+  min-height: 190px; margin: 0; padding: 10px; overflow: auto;
+  background: var(--bg-code); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.io-out:empty::after { content: attr(data-empty); color: var(--text-muted); }
+.meter { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+.meter b { color: var(--text-dim); font-weight: 500; }
+
+/* The character strip: the point of the tool, so it gets the visual weight. */
+.charmap {
+  display: flex; flex-wrap: wrap; gap: 3px; padding: 12px;
+  background: var(--bg-code); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); max-height: 260px; overflow: auto;
+}
+.cm {
+  display: grid; grid-template-rows: auto auto; gap: 1px; min-width: 22px;
+  padding: 4px 5px; border-radius: 5px; text-align: center;
+  font: 12px/1.35 var(--mono); border: 1px solid transparent;
+}
+.cm-from { color: var(--text-muted); }
+.cm-to { color: var(--text-dim); }
+.cm.same .cm-to { visibility: hidden; height: 0; }
+.cm.same { padding-block: 7px; }
+.cm.same .cm-from { color: var(--text); }
+.cm.changed { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.cm.changed .cm-from { color: var(--text); }
+.cm.changed .cm-to { color: var(--accent-text); }
+.cm.dropped { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.cm.dropped .cm-to { color: var(--warn); }
+.cm.bad { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.cm.bad .cm-from, .cm.bad .cm-to { color: var(--danger); }
+.cm .ws { color: var(--violet); }
+
+.layers { display: grid; gap: 0; }
+.layer {
+  display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px;
+  padding: 10px 12px; border-top: 1px solid var(--border);
+}
+.layer:first-child { border-top: 0; }
+.layer-tag { font: 11.5px/1.5 var(--mono); color: var(--text-muted); }
+.layer-tag b { display: block; color: var(--accent-text); font-weight: 600; font-size: 12.5px; }
+.layer-val { font: 12.5px/1.6 var(--mono); overflow-wrap: anywhere; color: var(--text-dim); }
+.layer:last-child .layer-val { color: var(--text); }
+
+.scheme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 6px; }
+.scheme-grid button {
+  text-align: left; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--bg-inset); border: 1px solid var(--border); color: var(--text-dim);
+}
+.scheme-grid button:hover { background: var(--bg-hover); color: var(--text); }
+.scheme-grid button[aria-pressed="true"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent-text); }
+.scheme-grid strong { display: block; font-size: 12.5px; font-weight: 600; }
+.scheme-grid small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.scheme-grid button[aria-pressed="true"] small { color: color-mix(in srgb, var(--accent-text) 75%, transparent); }
+
+/* ---- 7. Tables ---------------------------------------------------------- */
+.tablewrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  position: sticky; top: 0; z-index: 1; text-align: left; font-weight: 500;
+  color: var(--text-muted); font-size: 11.5px; background: var(--bg-panel);
+  padding: 8px 10px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
+}
+td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:hover { background: var(--bg-hover); }
+td.mono, .mono { font-family: var(--mono); font-size: 12.5px; }
+td input[type="text"] { padding: 5px 8px; background: var(--bg-code); }
+td .btn-icon { color: var(--text-muted); }
+td .btn-icon:hover { color: var(--danger); }
+.drag-handle { cursor: grab; color: var(--text-muted); user-select: none; padding: 0 2px; }
+tr.dragging { opacity: .4; }
+tr.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
+.empty-row td { color: var(--text-muted); text-align: center; padding: 22px; }
+
+.kv { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 2px 12px; font-size: 12.5px; }
+.kv dt { color: var(--text-muted); padding: 5px 0; }
+.kv dd { margin: 0; padding: 5px 0; font-family: var(--mono); overflow-wrap: anywhere; }
+.kv dd.void { color: var(--text-muted); font-style: italic; font-family: var(--sans); }
+#cv-gen { grid-template-columns: 172px minmax(0, 1fr); }
+
+.findings { display: grid; gap: 7px; }
+.finding { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: start; font-size: 12.5px; line-height: 1.55; }
+.finding .dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; }
+.finding code { font-family: var(--mono); background: var(--bg-inset); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.finding strong { font-weight: 600; }
+
+/* ---- 8. Reference ------------------------------------------------------- */
+.ref-table td:first-child { font-family: var(--mono); font-size: 14px; color: var(--text); }
+.ref-table .enc { font-family: var(--mono); font-size: 12px; }
+.yes { color: var(--ok); }
+.no  { color: var(--danger); }
+.snippet {
+  margin: 0; padding: 12px; overflow: auto; max-height: 340px;
+  background: var(--bg-code); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  font: 12.5px/1.65 var(--mono); white-space: pre; tab-size: 2;
+}
+.snippet .s-str { color: var(--ok); }
+.snippet .s-flag { color: var(--violet); }
+.snippet .s-cmd { color: var(--accent-text); }
+.snippet .s-key { color: var(--cyan); }
+.snippet .s-com { color: var(--text-muted); }
+
+/* ---- 9. Dialogs & toast ------------------------------------------------- */
+dialog {
+  width: min(660px, 94vw); padding: 0; color: var(--text);
+  background: var(--bg-elevated); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+dialog::backdrop { background: rgba(2, 6, 12, .62); backdrop-filter: blur(2px); }
+dialog .panel-body { max-height: 70vh; overflow: auto; }
+dialog p { color: var(--text-dim); font-size: 13px; line-height: 1.65; }
+dialog p + p { margin-top: 9px; }
+.sc-list { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 14px; align-items: center; font-size: 13px; }
+kbd {
+  display: inline-block; padding: 2px 7px; border-radius: 5px; font: 11.5px/1.5 var(--mono);
+  background: var(--bg-inset); border: 1px solid var(--border-strong); border-bottom-width: 2px; color: var(--text-dim);
+}
+#toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(10px);
+  padding: 9px 16px; border-radius: 999px; z-index: 90; pointer-events: none;
+  background: var(--bg-elevated); border: 1px solid var(--border-strong); box-shadow: var(--shadow);
+  font-size: 13px; opacity: 0; transition: opacity .16s, transform .16s;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+footer { max-width: 1520px; margin: 0 auto; padding: 0 14px 40px; color: var(--text-muted); font-size: 12px; line-height: 1.7; }
+footer a { color: var(--text-dim); }
+
+/* ---- 10. Responsive ----------------------------------------------------- */
+@media (max-width: 1080px) {
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .io, .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .brand-tag { display: none; }
+}
+/* Below this width the action row no longer fits beside the brand, so it gets
+   its own line and scrolls sideways rather than pushing the page wider. */
+@media (max-width: 880px) {
+  .topbar { position: static; height: auto; flex-wrap: wrap; gap: 8px; padding: 9px 12px; }
+  .tabs { top: 0; }
+  .spacer { display: none; }
+  .topbar-actions { flex: 1 1 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .topbar-actions::-webkit-scrollbar { display: none; }
+  .topbar-actions > * { flex: none; }
+}
+@media (max-width: 680px) {
+  .grid-4 { grid-template-columns: minmax(0, 1fr); }
+  /* Thirteen stacked cards would bury the workbench, so the picker drops to names only. */
+  .scheme-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .scheme-grid small { display: none; }
+  .scheme-grid strong { font-size: 11.5px; overflow-wrap: anywhere; }
+  .scheme-grid button { padding: 7px 8px; }
+  .badge-offline span:not(.pulse) { display: none; }
+  .badge-offline { padding: 6px; }
+  main { padding: 14px 10px 50px; }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .kv dt { padding-bottom: 0; }
+}
+</style>
+</head>
+<body>
+<a class="vh" href="#codec-in">Skip to the workbench</a>
+<noscript>
+  <div class="notice notice-warn" style="margin:14px">
+    <strong>urlforge needs JavaScript.</strong> Every conversion runs in your browser, so nothing can be
+    shown without scripting. No data is sent anywhere either way.
+  </div>
+</noscript>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M9 10.5h6a4.5 4.5 0 0 1 0 9h-3" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round"></path>
+      <path d="M23 21.5h-6a4.5 4.5 0 0 1 0-9h3" stroke="var(--violet)" stroke-width="3" fill="none" stroke-linecap="round"></path>
+    </svg>
+    <span class="brand-name">url<b>forge</b></span>
+    <span class="brand-tag" data-i18n="brand.tag">URL and encoding workbench</span>
+  </div>
+
+  <button type="button" class="badge-offline" id="btn-privacy" aria-haspopup="dialog" data-i18n-title="privacy.tip"
+          title="Everything runs locally in your browser. Click for details.">
+    <span class="pulse" aria-hidden="true"></span>
+    <span data-i18n="badge.offline">Offline · nothing is uploaded</span>
+  </button>
+
+  <div class="spacer"></div>
+
+  <div class="topbar-actions">
+    <button type="button" class="btn btn-sm" id="btn-share" data-i18n-title="share.tip" data-i18n="btn.share"
+            title="Copy a link that restores this workspace">Copy workspace link</button>
+    <div class="seg" role="group" aria-label="Language">
+      <button type="button" data-lang-set="en" aria-pressed="false">EN</button>
+      <button type="button" data-lang-set="tr" aria-pressed="false">TR</button>
+    </div>
+    <div class="seg" role="group" aria-label="Colour theme">
+      <button type="button" data-theme-set="light" aria-pressed="false" data-i18n="theme.light">Light</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false" data-i18n="theme.dark">Dark</button>
+      <button type="button" data-theme-set="system" aria-pressed="false" data-i18n="theme.system">System</button>
+    </div>
+    <button type="button" class="btn btn-icon" id="btn-shortcuts" aria-label="Keyboard shortcuts" data-i18n-title="shortcuts.tip" title="Keyboard shortcuts">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <rect x="2.5" y="5.5" width="19" height="13" rx="2.5"></rect>
+        <path d="M6.5 9.5h.01M10 9.5h.01M13.5 9.5h.01M17 9.5h.01M8 14.5h8" stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Tools">
+  <button class="tab" role="tab" id="tab-codec"     aria-controls="view-codec"     aria-selected="true"  data-i18n="tab.codec">Encode &amp; decode</button>
+  <button class="tab" role="tab" id="tab-inspect"   aria-controls="view-inspect"   aria-selected="false" data-i18n="tab.inspect">URL inspector</button>
+  <button class="tab" role="tab" id="tab-batch"     aria-controls="view-batch"     aria-selected="false" data-i18n="tab.batch">Batch</button>
+  <button class="tab" role="tab" id="tab-request"   aria-controls="view-request"   aria-selected="false" data-i18n="tab.request">Request forge</button>
+  <button class="tab" role="tab" id="tab-convert"   aria-controls="view-convert"   aria-selected="false" data-i18n="tab.convert">Convert</button>
+  <button class="tab" role="tab" id="tab-reference" aria-controls="view-reference" aria-selected="false" data-i18n="tab.reference">Reference</button>
+</nav>
+
+<main>
+<!-- ============================ Encode & decode ============================ -->
+<div class="view" id="view-codec" role="tabpanel" aria-labelledby="tab-codec">
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="codec.scheme">Encoding scheme</h2>
+      <div class="spacer"></div>
+      <div class="seg" role="group" aria-label="Direction">
+        <button type="button" data-dir="encode" aria-pressed="true"  data-i18n="codec.encode">Encode</button>
+        <button type="button" data-dir="decode" aria-pressed="false" data-i18n="codec.decode">Decode</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="scheme-grid" id="scheme-grid" role="group" aria-label="Encoding scheme"></div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="opt-deep"><span data-i18n="codec.opt.deep">Keep decoding until it stops changing</span></label>
+        <label class="check"><input type="checkbox" id="opt-lossy"><span data-i18n="codec.opt.lossy">Replace undecodable bytes instead of failing</span></label>
+        <label class="check"><input type="checkbox" id="opt-lines"><span data-i18n="codec.opt.lines">Treat each line separately</span></label>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="codec.workbench">Workbench</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-swap" data-i18n="codec.swap">Move output to input</button>
+      <button type="button" class="btn btn-sm" id="btn-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm" id="btn-codec-clear" data-i18n="btn.clear">Clear</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-codec-copy" data-i18n="btn.copyOut">Copy output</button>
+    </div>
+    <div class="panel-body">
+      <div class="io">
+        <div>
+          <label class="field-label" for="codec-in" data-i18n="codec.in">Input</label>
+          <textarea id="codec-in" spellcheck="false" autocapitalize="off" autocorrect="off"
+                    data-i18n-ph="codec.in.ph" placeholder="Paste a URL, a query value, or any text"></textarea>
+          <div class="meter"><span data-i18n="meter.chars">Characters</span> <b id="in-chars">0</b> · <span data-i18n="meter.bytes">UTF-8 bytes</span> <b id="in-bytes">0</b></div>
+        </div>
+        <div>
+          <label class="field-label" for="codec-out" data-i18n="codec.out">Output</label>
+          <pre class="io-out" id="codec-out" tabindex="0" data-empty="—"></pre>
+          <div class="meter"><span data-i18n="meter.chars">Characters</span> <b id="out-chars">0</b> · <span data-i18n="meter.bytes">UTF-8 bytes</span> <b id="out-bytes">0</b> · <span data-i18n="meter.delta">Change</span> <b id="out-delta">0%</b></div>
+        </div>
+      </div>
+      <div id="codec-status"></div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="codec.map">What changed, character by character</h3>
+        <div class="spacer"></div>
+        <span class="chip chip-accent" id="map-count">0</span>
+      </div>
+      <div class="panel-body">
+        <div class="charmap" id="charmap"></div>
+        <p class="hint" data-i18n="codec.map.hint">Highlighted cells were rewritten. The row underneath shows what each one became.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="codec.layers">Encoding layers</h3>
+        <div class="spacer"></div>
+        <span class="chip" id="layer-count">—</span>
+      </div>
+      <div class="panel-body tight">
+        <div class="layers" id="layers"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================ URL inspector ============================= -->
+<div class="view" id="view-inspect" role="tabpanel" aria-labelledby="tab-inspect" hidden>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="insp.title">The URL</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-insp-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm" id="btn-insp-normalize" data-i18n="insp.normalize">Normalise</button>
+      <button type="button" class="btn btn-sm" id="btn-insp-clear" data-i18n="btn.clear">Clear</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-insp-copy" data-i18n="insp.copy">Copy rebuilt URL</button>
+    </div>
+    <div class="panel-body">
+      <textarea id="insp-in" rows="3" spellcheck="false" autocapitalize="off" autocorrect="off"
+                data-i18n-ph="insp.ph" placeholder="https://api.example.com/v2/search?q=kebab%20%C3%A7orba&amp;page=2#results"></textarea>
+      <div id="insp-status"></div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head"><h3 data-i18n="insp.parts">Parts</h3></div>
+      <div class="panel-body">
+        <dl class="kv" id="insp-parts"></dl>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="insp.findings">Findings</h3>
+        <div class="spacer"></div>
+        <span class="chip" id="insp-finding-count">—</span>
+      </div>
+      <div class="panel-body">
+        <div class="findings" id="insp-findings"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3 data-i18n="insp.query">Query parameters</h3>
+      <div class="spacer"></div>
+      <label class="check"><input type="checkbox" id="opt-plus"><span data-i18n="insp.plus">Read <code>+</code> as a space</span></label>
+      <button type="button" class="btn btn-sm" id="btn-q-add" data-i18n="insp.addParam">Add parameter</button>
+      <button type="button" class="btn btn-sm" id="btn-q-sort" data-i18n="insp.sort">Sort by name</button>
+      <button type="button" class="btn btn-sm" id="btn-q-json" data-i18n="insp.asJson">Copy as JSON</button>
+    </div>
+    <div class="panel-body tight">
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th style="width:28px"></th>
+            <th style="width:24%" data-i18n="insp.th.name">Name</th>
+            <th data-i18n="insp.th.value">Value (decoded)</th>
+            <th style="width:22%" data-i18n="insp.th.raw">Raw</th>
+            <th style="width:158px" data-i18n="insp.th.notes">Notes</th>
+            <th style="width:34px"></th>
+          </tr></thead>
+          <tbody id="q-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head"><h3 data-i18n="insp.segments">Path segments</h3></div>
+      <div class="panel-body tight">
+        <div class="tablewrap">
+          <table>
+            <thead><tr>
+              <th style="width:42px">#</th>
+              <th style="width:40%" data-i18n="insp.th.raw">Raw</th>
+              <th data-i18n="insp.th.decoded">Decoded</th>
+            </tr></thead>
+            <tbody id="seg-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="insp.compare">Compare with another URL</h3>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-sm" id="btn-cmp-swap" data-i18n="insp.cmpSwap">Swap sides</button>
+      </div>
+      <div class="panel-body">
+        <textarea id="cmp-in" rows="2" spellcheck="false" data-i18n-ph="insp.cmpPh" placeholder="The URL to compare against"></textarea>
+        <div id="cmp-out"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ================================ Batch ================================= -->
+<div class="view" id="view-batch" role="tabpanel" aria-labelledby="tab-batch" hidden>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="batch.title">One operation, every line</h2>
+      <div class="spacer"></div>
+      <select id="batch-op" style="width:auto"></select>
+      <button type="button" class="btn btn-sm" id="btn-batch-run" data-i18n="batch.run">Run</button>
+      <button type="button" class="btn btn-sm" id="btn-batch-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm" id="btn-batch-copy" data-i18n="btn.copyOut">Copy output</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-batch-dl" data-i18n="batch.download">Download</button>
+    </div>
+    <div class="panel-body">
+      <div class="row">
+        <label class="check"><input type="checkbox" id="batch-dedupe"><span data-i18n="batch.dedupe">Remove duplicates</span></label>
+        <label class="check"><input type="checkbox" id="batch-sort"><span data-i18n="batch.sort">Sort the result</span></label>
+        <label class="check"><input type="checkbox" id="batch-skipblank" checked><span data-i18n="batch.skipblank">Skip blank lines</span></label>
+        <div class="spacer"></div>
+        <label class="field-label" for="batch-format" style="margin:0" data-i18n="batch.format">Download as</label>
+        <select id="batch-format" style="width:auto">
+          <option value="txt">TXT</option><option value="csv">CSV</option><option value="json">JSON</option>
+        </select>
+      </div>
+      <div class="io">
+        <div>
+          <label class="field-label" for="batch-in" data-i18n="batch.in">Input lines</label>
+          <textarea id="batch-in" rows="14" spellcheck="false" data-i18n-ph="batch.ph" placeholder="One value or URL per line"></textarea>
+          <div class="meter"><span data-i18n="batch.lines">Lines</span> <b id="batch-in-n">0</b></div>
+        </div>
+        <div>
+          <label class="field-label" for="batch-out" data-i18n="batch.out">Result</label>
+          <pre class="io-out" id="batch-out" tabindex="0" style="min-height:270px" data-empty="—"></pre>
+          <div class="meter"><span data-i18n="batch.lines">Lines</span> <b id="batch-out-n">0</b> · <span data-i18n="batch.failed">Failed</span> <b id="batch-fail">0</b></div>
+        </div>
+      </div>
+      <div id="batch-status"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ============================= Request forge ============================ -->
+<div class="view" id="view-request" role="tabpanel" aria-labelledby="tab-request" hidden>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="req.title">The request</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-req-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm" id="btn-req-clear" data-i18n="btn.clear">Clear</button>
+    </div>
+    <div class="panel-body">
+      <div class="row" style="flex-wrap:nowrap">
+        <select id="req-method" style="width:120px" aria-label="Method">
+          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option>
+          <option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
+        </select>
+        <input type="text" id="req-url" spellcheck="false" data-i18n-ph="req.urlPh" placeholder="https://api.example.com/v2/orders">
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="row" style="margin-bottom:6px">
+            <span class="field-label" style="margin:0" data-i18n="req.headers">Headers</span>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn-sm" id="btn-h-add" data-i18n="req.addHeader">Add header</button>
+          </div>
+          <div class="panel tablewrap" style="max-height:240px">
+            <table><tbody id="h-rows"></tbody></table>
+          </div>
+        </div>
+        <div>
+          <div class="row" style="margin-bottom:6px">
+            <label class="field-label" for="req-body-type" style="margin:0" data-i18n="req.body">Body</label>
+            <div class="spacer"></div>
+            <select id="req-body-type" style="width:auto">
+              <option value="none" data-i18n="req.body.none">No body</option>
+              <option value="json">JSON</option>
+              <option value="form">Form (x-www-form-urlencoded)</option>
+              <option value="raw" data-i18n="req.body.raw">Raw text</option>
+            </select>
+            <button type="button" class="btn btn-sm" id="btn-body-pretty" data-i18n="req.pretty">Tidy JSON</button>
+          </div>
+          <textarea id="req-body" rows="9" spellcheck="false" data-i18n-ph="req.bodyPh" placeholder='{ "sku": "ABC-1", "qty": 2 }'></textarea>
+        </div>
+      </div>
+      <div id="req-status"></div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="req.import">Start from a curl command</h3>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-curl-import" data-i18n="req.importBtn">Fill the form</button>
+      </div>
+      <div class="panel-body">
+        <textarea id="curl-in" rows="6" spellcheck="false" data-i18n-ph="req.curlPh"
+                  placeholder="curl -X POST 'https://api.example.com/v2/orders' -H 'Authorization: Bearer ...' -d '{...}'"></textarea>
+        <p class="hint" data-i18n="req.curlHint">Paste what your browser's “Copy as cURL” gave you. Line continuations, quoting and <code>--data-urlencode</code> are handled.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="req.snippet">Snippet</h3>
+        <div class="spacer"></div>
+        <select id="req-lang" style="width:auto" aria-label="Snippet language">
+          <option value="curl">curl</option>
+          <option value="httpie">HTTPie</option>
+          <option value="fetch">JavaScript fetch</option>
+          <option value="axios">axios</option>
+          <option value="python">Python requests</option>
+          <option value="go">Go net/http</option>
+          <option value="powershell">PowerShell</option>
+          <option value="php">PHP curl</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-req-copy" data-i18n="btn.copy">Copy</button>
+      </div>
+      <div class="panel-body">
+        <pre class="snippet" id="req-snippet"></pre>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="oauth.title">OAuth 2.0 authorisation URL</h3>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-sm" id="btn-pkce" data-i18n="oauth.pkce">Generate PKCE pair</button>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-oauth-copy" data-i18n="btn.copy">Copy</button>
+      </div>
+      <div class="panel-body">
+        <div class="grid-2">
+          <label class="field"><span class="field-label" data-i18n="oauth.endpoint">Authorisation endpoint</span>
+            <input type="text" id="oa-endpoint" value="https://auth.example.com/oauth2/authorize" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="oauth.clientId">Client ID</span>
+            <input type="text" id="oa-client" value="my-client" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="oauth.redirect">Redirect URI</span>
+            <input type="text" id="oa-redirect" value="https://app.example.com/callback" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="oauth.scope">Scope</span>
+            <input type="text" id="oa-scope" value="openid profile email" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="oauth.responseType">Response type</span>
+            <input type="text" id="oa-response" value="code" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="oauth.state">State</span>
+            <input type="text" id="oa-state" spellcheck="false"></label>
+          <label class="field"><span class="field-label">code_verifier</span>
+            <input type="text" id="oa-verifier" spellcheck="false"></label>
+          <label class="field"><span class="field-label">code_challenge (S256)</span>
+            <input type="text" id="oa-challenge" spellcheck="false" readonly></label>
+        </div>
+        <pre class="io-out" id="oa-out" style="min-height:0" data-empty="—"></pre>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h3 data-i18n="oauth.cb">Read a callback URL</h3></div>
+      <div class="panel-body">
+        <textarea id="cb-in" rows="3" spellcheck="false" data-i18n-ph="oauth.cbPh"
+                  placeholder="https://app.example.com/callback?code=...&amp;state=..."></textarea>
+        <div id="cb-out"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- =============================== Convert ================================ -->
+<div class="view" id="view-convert" role="tabpanel" aria-labelledby="tab-convert" hidden>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="cv.bytes">Text, Base64 and hex</h3>
+        <div class="spacer"></div>
+        <span class="chip" id="cv-bytes-len">0 B</span>
+      </div>
+      <div class="panel-body">
+        <label class="field"><span class="field-label" data-i18n="cv.text">Text</span>
+          <textarea id="cv-text" rows="3" spellcheck="false" data-i18n-ph="cv.textPh" placeholder="Type here, or into any field below"></textarea></label>
+        <label class="field"><span class="field-label">Base64</span>
+          <textarea id="cv-b64" rows="2" spellcheck="false"></textarea></label>
+        <label class="field"><span class="field-label">Base64URL</span>
+          <textarea id="cv-b64u" rows="2" spellcheck="false"></textarea></label>
+        <label class="field"><span class="field-label" data-i18n="cv.hex">Hex</span>
+          <textarea id="cv-hex" rows="2" spellcheck="false"></textarea></label>
+        <div id="cv-bytes-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="cv.query">Query string and JSON</h3>
+        <div class="spacer"></div>
+        <label class="check"><input type="checkbox" id="cv-q-plus" checked><span data-i18n="insp.plus">Read <code>+</code> as a space</span></label>
+      </div>
+      <div class="panel-body">
+        <label class="field"><span class="field-label" data-i18n="cv.qs">Query string</span>
+          <textarea id="cv-qs" rows="4" spellcheck="false" placeholder="a=1&amp;b=hello+world&amp;tags=x&amp;tags=y"></textarea></label>
+        <label class="field"><span class="field-label">JSON</span>
+          <textarea id="cv-json" rows="8" spellcheck="false" placeholder='{ "a": "1", "b": "hello world" }'></textarea></label>
+        <div id="cv-q-status"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="cv.time">Timestamps</h3>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-sm" id="btn-now" data-i18n="cv.now">Use now</button>
+      </div>
+      <div class="panel-body">
+        <div class="grid-2">
+          <label class="field"><span class="field-label" data-i18n="cv.epoch">Unix seconds</span><input type="text" id="cv-epoch" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="cv.epochms">Unix milliseconds</span><input type="text" id="cv-epochms" spellcheck="false"></label>
+          <label class="field"><span class="field-label">ISO 8601 (UTC)</span><input type="text" id="cv-iso" spellcheck="false"></label>
+          <label class="field"><span class="field-label" data-i18n="cv.local">Local time</span><input type="text" id="cv-local" spellcheck="false" readonly></label>
+        </div>
+        <div id="cv-time-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="cv.hash">Hash and HMAC</h3>
+        <div class="spacer"></div>
+        <select id="cv-alg" style="width:auto">
+          <option>SHA-256</option><option>SHA-384</option><option>SHA-512</option><option>SHA-1</option>
+        </select>
+        <select id="cv-hash-out" style="width:auto">
+          <option value="hex" data-i18n="cv.hex">Hex</option>
+          <option value="b64">Base64</option>
+          <option value="b64u">Base64URL</option>
+        </select>
+      </div>
+      <div class="panel-body">
+        <label class="field"><span class="field-label" data-i18n="cv.message">Message</span>
+          <textarea id="cv-hash-in" rows="3" spellcheck="false"></textarea></label>
+        <label class="field"><span class="field-label" data-i18n="cv.hmacKey">HMAC key (leave empty for a plain hash)</span>
+          <input type="text" id="cv-hmac-key" spellcheck="false"></label>
+        <pre class="io-out" id="cv-hash-out-val" style="min-height:0" data-empty="—"></pre>
+        <div id="cv-hash-status"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="cv.gen">Generators</h3>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-sm" id="btn-gen" data-i18n="cv.regen">Generate again</button>
+      </div>
+      <div class="panel-body">
+        <dl class="kv" id="cv-gen"></dl>
+        <label class="field"><span class="field-label" data-i18n="cv.slugIn">Turn a title into a slug</span>
+          <input type="text" id="cv-slug-in" spellcheck="false" data-i18n-ph="cv.slugPh" placeholder="Çorbacı Ali'nin 2. şubesi — İstanbul"></label>
+        <pre class="io-out" id="cv-slug-out" style="min-height:0" data-empty="—"></pre>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3 data-i18n="cv.jwt">Peek inside a JWT</h3>
+        <div class="spacer"></div>
+        <a class="btn btn-sm" href="https://kaandikec.com/jwtforge/" target="_blank" rel="noopener noreferrer" data-i18n="cv.jwtFull" style="text-decoration:none">Open jwtforge</a>
+      </div>
+      <div class="panel-body">
+        <textarea id="cv-jwt" rows="3" spellcheck="false" data-i18n-ph="cv.jwtPh" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...."></textarea>
+        <pre class="io-out" id="cv-jwt-out" style="min-height:0" data-empty="—"></pre>
+        <p class="hint" data-i18n="cv.jwtHint">This only decodes. Signatures are never checked here — use jwtforge for that.</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============================== Reference =============================== -->
+<div class="view" id="view-reference" role="tabpanel" aria-labelledby="tab-reference" hidden>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="ref.title">Which characters survive, and where</h2>
+      <div class="spacer"></div>
+      <input type="text" id="ref-filter" style="width:220px" data-i18n-ph="ref.filterPh" placeholder="Filter by character or name">
+      <select id="ref-cat" style="width:auto">
+        <option value="all" data-i18n="ref.cat.all">Every character</option>
+        <option value="unreserved" data-i18n="ref.cat.unreserved">Unreserved</option>
+        <option value="gen-delims" data-i18n="ref.cat.gen">Reserved · gen-delims</option>
+        <option value="sub-delims" data-i18n="ref.cat.sub">Reserved · sub-delims</option>
+        <option value="other" data-i18n="ref.cat.other">Everything else</option>
+      </select>
+    </div>
+    <div class="panel-body">
+      <p class="lede" data-i18n="ref.lede">RFC 3986 splits characters into unreserved ones, which never need escaping, and reserved ones, which carry meaning in some part of a URL and must be escaped everywhere else. A green tick means the character can appear literally in that component.</p>
+    </div>
+    <div class="panel-body tight">
+      <div class="tablewrap" style="max-height:62vh">
+        <table class="ref-table">
+          <thead><tr>
+            <th style="width:46px" data-i18n="ref.th.char">Char</th>
+            <th style="width:64px" data-i18n="ref.th.code">Code</th>
+            <th style="width:18%" data-i18n="ref.th.name">Name</th>
+            <th style="width:12%" data-i18n="ref.th.class">Class</th>
+            <th style="width:92px">encodeURI<wbr>Component</th>
+            <th style="width:82px">encodeURI</th>
+            <th style="width:72px" data-i18n="ref.th.form">Form</th>
+            <th style="width:62px" data-i18n="ref.th.path">Path</th>
+            <th style="width:62px" data-i18n="ref.th.queryCol">Query</th>
+            <th style="width:72px" data-i18n="ref.th.frag">Fragment</th>
+          </tr></thead>
+          <tbody id="ref-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+</main>
+
+<footer>
+  <p><span data-i18n="footer.line1">urlforge runs entirely in your browser. No analytics, no fonts, no CDN, no requests of any kind — save the page and it still works offline.</span></p>
+  <p>
+    <a href="https://github.com/dikeckaan/urlforge" target="_blank" rel="noopener noreferrer">github.com/dikeckaan/urlforge</a> ·
+    <a href="https://kaandikec.com/jwtforge/" target="_blank" rel="noopener noreferrer">jwtforge</a> ·
+    <a href="https://oasforge.dev" target="_blank" rel="noopener noreferrer">oasforge</a>
+  </p>
+</footer>
+
+<dialog id="dlg-privacy" aria-labelledby="privacy-title">
+  <div class="panel-head"><h2 id="privacy-title" data-i18n="privacy.title">Where your data goes</h2><div class="spacer"></div>
+    <button type="button" class="btn btn-sm" data-close data-i18n="btn.close">Close</button></div>
+  <div class="panel-body">
+    <p data-i18n="privacy.p1">Nowhere. Every conversion on this page is plain JavaScript running inside your tab. The page loads no scripts, styles, fonts or images from anywhere else, and makes no network requests while you use it.</p>
+    <p data-i18n="privacy.p2">Only two things are stored, both in this browser's local storage and only on this device: your language and theme choice, and nothing else. Clearing site data removes them.</p>
+    <p data-i18n="privacy.p3">“Copy workspace link” puts your current input into the link's fragment. Fragments are never sent to a server, but anyone you send the link to can read it — so treat a shared link like the data it carries.</p>
+  </div>
+</dialog>
+
+<dialog id="dlg-shortcuts" aria-labelledby="sc-title" style="width:min(520px,94vw)">
+  <div class="panel-head"><h2 id="sc-title" data-i18n="shortcuts.title">Keyboard shortcuts</h2><div class="spacer"></div>
+    <button type="button" class="btn btn-sm" data-close data-i18n="btn.close">Close</button></div>
+  <div class="panel-body">
+    <div class="sc-list">
+      <kbd>Alt</kbd> <span data-i18n="sc.tabs">+ 1 … 6 — jump to a tool</span>
+      <kbd>Alt + E</kbd> <span data-i18n="sc.encode">Switch to encoding</span>
+      <kbd>Alt + D</kbd> <span data-i18n="sc.decode">Switch to decoding</span>
+      <kbd>Alt + S</kbd> <span data-i18n="sc.swap">Move the output back into the input</span>
+      <kbd>Alt + C</kbd> <span data-i18n="sc.copy">Copy the output</span>
+      <kbd>Alt + X</kbd> <span data-i18n="sc.clear">Clear the current tool</span>
+      <kbd>?</kbd> <span data-i18n="sc.help">Open this list</span>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+(function () {
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const el = (tag, cls, txt) => { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; };
+
+/* ======================================================================
+   1. Language
+   ====================================================================== */
+const I18N = {
+en: {
+  'brand.tag': 'URL and encoding workbench',
+  'badge.offline': 'Offline · nothing is uploaded',
+  'privacy.tip': 'Everything runs locally in your browser. Click for details.',
+  'share.tip': 'Copy a link that restores this workspace',
+  'btn.share': 'Copy workspace link',
+  'theme.light': 'Light', 'theme.dark': 'Dark', 'theme.system': 'System',
+  'shortcuts.tip': 'Keyboard shortcuts',
+  'tab.codec': 'Encode & decode', 'tab.inspect': 'URL inspector', 'tab.batch': 'Batch',
+  'tab.request': 'Request forge', 'tab.convert': 'Convert', 'tab.reference': 'Reference',
+  'btn.clear': 'Clear', 'btn.copy': 'Copy', 'btn.copyOut': 'Copy output', 'btn.close': 'Close',
+  'btn.remove': 'Remove',
+  'toast.copied': 'Copied', 'toast.copyFailed': 'The browser refused to copy. Select the text instead.',
+  'toast.nothing': 'Nothing to copy yet', 'toast.linkCopied': 'Workspace link copied',
+  'toast.restored': 'Workspace restored from the link',
+
+  'codec.scheme': 'Encoding scheme', 'codec.encode': 'Encode', 'codec.decode': 'Decode',
+  'codec.opt.deep': 'Keep decoding until it stops changing',
+  'codec.opt.lossy': 'Replace undecodable bytes instead of failing',
+  'codec.opt.lines': 'Treat each line separately',
+  'codec.workbench': 'Workbench', 'codec.swap': 'Move output to input', 'codec.sample': 'Load an example',
+  'codec.in': 'Input', 'codec.out': 'Output',
+  'codec.in.ph': 'Paste a URL, a query value, or any text',
+  'meter.chars': 'Characters', 'meter.bytes': 'UTF-8 bytes', 'meter.delta': 'Change',
+  'codec.map': 'What changed, character by character',
+  'codec.map.hint': 'Highlighted cells were rewritten. The row underneath shows what each one became.',
+  'codec.map.none': 'Nothing was rewritten — every character was already safe for this scheme.',
+  'codec.map.na': 'This scheme regroups bytes, so there is no character-for-character mapping to show.',
+  'codec.empty': 'Type or paste something above to see it here.',
+  'codec.map.big': 'Showing the first {0} characters of {1}.',
+  'codec.layers': 'Encoding layers',
+  'codec.layer.input': 'as given', 'codec.layer.pass': 'pass {0}',
+  'codec.layers.single': 'This text is not percent-encoded, so there is nothing to peel back.',
+  'codec.layers.n': 'Decoded {0} times before the text stopped changing.',
+  'codec.err.percent': 'Broken percent escape at position {0}: <code>{1}</code> is not two hex digits.',
+  'codec.err.utf8': 'The percent escapes at position {0} are not valid UTF-8.',
+  'codec.err.b64': 'This is not valid Base64.',
+  'codec.err.hexlen': 'A hex string needs an even number of digits.',
+  'codec.err.hexchar': 'Not a hex digit: <code>{0}</code>.',
+  'codec.err.punycode': 'This host cannot be converted: {0}',
+  'codec.ok.lossy': 'Undecodable bytes were replaced with U+FFFD.',
+  'codec.double': 'This looks double-encoded: decoding it once still leaves percent escapes behind.',
+  'codec.noop': 'Encoding this changes nothing — every character is already safe.',
+
+  'sch.component.n': 'encodeURIComponent', 'sch.component.d': 'The everyday choice for a single query value or path segment.',
+  'sch.uri.n': 'encodeURI', 'sch.uri.d': 'Keeps :/?#[]@ intact, so a whole URL survives.',
+  'sch.rfc3986.n': 'RFC 3986 strict', 'sch.rfc3986.d': "Like encodeURIComponent, but also escapes ! ' ( ) *.",
+  'sch.form.n': 'Form data', 'sch.form.d': 'application/x-www-form-urlencoded — a space becomes +.',
+  'sch.path.n': 'Path segment', 'sch.path.d': 'Safe inside one segment; / is escaped.',
+  'sch.fragment.n': 'Fragment', 'sch.fragment.d': 'What is allowed after the # sign.',
+  'sch.all.n': 'Every byte', 'sch.all.d': 'Percent-encodes everything, including A–Z.',
+  'sch.b64.n': 'Base64', 'sch.b64.d': 'Standard alphabet with = padding.',
+  'sch.b64u.n': 'Base64URL', 'sch.b64u.d': 'URL-safe alphabet, no padding — JWT style.',
+  'sch.hex.n': 'Hex escapes', 'sch.hex.d': 'Bytes as \\xNN, the way shells and logs show them.',
+  'sch.unicode.n': 'Unicode escapes', 'sch.unicode.d': 'Characters as \\uXXXX, the way JSON and JS do.',
+  'sch.html.n': 'HTML entities', 'sch.html.d': 'Escapes & < > " \\u0027 so a URL survives inside markup.',
+  'sch.puny.n': 'Punycode / IDN', 'sch.puny.d': 'Turns an international host into its xn-- form and back.',
+
+  'insp.title': 'The URL', 'insp.normalize': 'Normalise', 'insp.copy': 'Copy rebuilt URL',
+  'insp.ph': 'https://api.example.com/v2/search?q=kebab%20%C3%A7orba&page=2#results',
+  'insp.parts': 'Parts', 'insp.findings': 'Findings', 'insp.query': 'Query parameters',
+  'insp.plus': 'Read <code>+</code> as a space', 'insp.addParam': 'Add parameter',
+  'insp.sort': 'Sort by name', 'insp.asJson': 'Copy as JSON',
+  'insp.th.name': 'Name', 'insp.th.value': 'Value (decoded)', 'insp.th.raw': 'Raw',
+  'insp.th.notes': 'Notes', 'insp.th.decoded': 'Decoded',
+  'insp.segments': 'Path segments', 'insp.compare': 'Compare with another URL',
+  'insp.cmpSwap': 'Swap sides', 'insp.cmpPh': 'The URL to compare against',
+  'insp.empty': 'Paste a URL above and it will be taken apart here.',
+  'insp.relative': 'This is a relative reference, so it has no scheme or host. It was resolved against <code>{0}</code> to show the parts.',
+  'insp.invalid': 'This cannot be read as a URL: {0}',
+  'insp.noparams': 'No query parameters.', 'insp.nosegments': 'No path segments.',
+  'insp.clean': 'Nothing worth flagging.',
+  'insp.part.scheme': 'Scheme', 'insp.part.user': 'User info', 'insp.part.host': 'Host',
+  'insp.part.hostUnicode': 'Host (unicode)', 'insp.part.port': 'Port', 'insp.part.path': 'Path',
+  'insp.part.query': 'Query', 'insp.part.fragment': 'Fragment', 'insp.part.origin': 'Origin',
+  'insp.part.length': 'Length', 'insp.part.params': 'Parameters',
+  'insp.none': 'none', 'insp.default': 'default for the scheme',
+  'insp.cmp.same': 'These two URLs are equivalent once normalised.',
+  'insp.cmp.diff': '{0} difference(s).',
+  'insp.cmp.paramOnly': 'only on the {0}',
+  'insp.left': 'left', 'insp.right': 'right',
+  'insp.normalized': 'Normalised.', 'insp.normalNoop': 'Already normalised.',
+  'note.plus': 'contains +', 'note.double': 'double-encoded', 'note.json': 'JSON',
+  'note.empty': 'empty', 'note.novalue': 'no =', 'note.dup': 'repeated', 'note.b64': 'looks Base64',
+  'note.url': 'a URL', 'note.jwt': 'a JWT',
+
+  'f.credentials': '<strong>Credentials in the URL.</strong> <code>{0}</code> travels in logs, proxies and history. Send it in a header instead.',
+  'f.unencodedSpace': '<strong>A literal space</strong> is in the URL. It must be <code>%20</code>, or <code>+</code> inside a form-encoded query.',
+  'f.doubleEncoded': '<strong>{0}</strong> looks double-encoded — decoding once leaves <code>{1}</code>, which is still escaped.',
+  'f.unicodeHost': '<strong>Non-ASCII host.</strong> <code>{0}</code> must be sent as <code>{1}</code>.',
+  'f.reservedRaw': '<strong>Unescaped <code>{0}</code></strong> inside a parameter value changes where the query ends.',
+  'f.longUrl': '<strong>{0} characters long.</strong> Some proxies and servers cut URLs off around 2 000; IE never went past 2 083.',
+  'f.noScheme': '<strong>No scheme.</strong> A protocol-relative or bare reference behaves differently depending on the page it sits on.',
+  'f.httpPlain': '<strong>Plain http.</strong> Everything in this URL, including the query, crosses the network in the clear.',
+  'f.defaultPort': 'The port <code>{0}</code> is the default for <code>{1}</code> and can be dropped.',
+  'f.dotSegments': 'The path contains <code>.</code> or <code>..</code> segments, which resolve to <code>{0}</code>.',
+  'f.uppercaseEscape': 'Percent escapes are lower-case in places; RFC 3986 prefers upper-case hex.',
+  'f.emptyParam': '<strong>{0}</strong> has no value. Servers disagree on whether that means empty or absent.',
+  'f.dupParam': '<strong>{0}</strong> appears {1} times. Frameworks disagree: some take the first, some the last, some build a list.',
+  'f.secretish': '<strong>{0}</strong> looks like a secret. Query strings end up in server logs and Referer headers.',
+  'f.trailingChars': 'The URL ends in <code>{0}</code>, which is often an artefact of copying.',
+  'f.mixedCase': 'The host has upper-case letters. Hosts are case-insensitive and are normally written in lower case.',
+
+  'batch.title': 'One operation, every line', 'batch.run': 'Run', 'batch.download': 'Download',
+  'batch.dedupe': 'Remove duplicates', 'batch.sort': 'Sort the result', 'batch.skipblank': 'Skip blank lines',
+  'batch.format': 'Download as', 'batch.in': 'Input lines', 'batch.out': 'Result',
+  'batch.ph': 'One value or URL per line', 'batch.lines': 'Lines', 'batch.failed': 'Failed',
+  'batch.done': 'Processed {0} lines, {1} failed.', 'batch.empty': 'Add some lines first.',
+  'batch.dl': 'Downloaded {0}',
+  'op.encComponent': 'Encode · encodeURIComponent', 'op.decComponent': 'Decode · percent',
+  'op.encForm': 'Encode · form data', 'op.decForm': 'Decode · form data',
+  'op.encB64u': 'Encode · Base64URL', 'op.decB64u': 'Decode · Base64URL',
+  'op.deepDecode': 'Decode until it stops changing', 'op.normalize': 'Normalise the URL',
+  'op.host': 'Keep the host only', 'op.origin': 'Keep the origin only', 'op.path': 'Keep the path only',
+  'op.strip': 'Drop the query and fragment', 'op.qjson': 'Query string to JSON',
+  'op.slug': 'Make a slug', 'op.puny': 'Host to punycode', 'op.lower': 'Lower-case',
+
+  'req.title': 'The request', 'req.urlPh': 'https://api.example.com/v2/orders',
+  'req.headers': 'Headers', 'req.addHeader': 'Add header', 'req.body': 'Body',
+  'req.body.none': 'No body', 'req.body.raw': 'Raw text', 'req.pretty': 'Tidy JSON',
+  'req.bodyPh': '{ "sku": "ABC-1", "qty": 2 }',
+  'req.import': 'Start from a curl command', 'req.importBtn': 'Fill the form',
+  'req.curlPh': "curl -X POST 'https://api.example.com/v2/orders' -H 'Authorization: Bearer ...' -d '{...}'",
+  'req.curlHint': 'Paste what your browser’s “Copy as cURL” gave you. Line continuations, quoting and <code>--data-urlencode</code> are handled.',
+  'req.snippet': 'Snippet', 'req.hName': 'Header', 'req.hValue': 'Value',
+  'req.imported': 'Imported {0} header(s){1}.', 'req.withBody': ' and a body',
+  'req.curlEmpty': 'Paste a curl command first.',
+  'req.curlNotCurl': 'That does not start with <code>curl</code>.',
+  'req.badJson': 'The body is not valid JSON: {0}',
+  'req.jsonTidied': 'JSON tidied.',
+  'req.noUrl': 'Add a URL and the snippet will build itself.',
+
+  'oauth.title': 'OAuth 2.0 authorisation URL', 'oauth.pkce': 'Generate PKCE pair',
+  'oauth.endpoint': 'Authorisation endpoint', 'oauth.clientId': 'Client ID',
+  'oauth.redirect': 'Redirect URI', 'oauth.scope': 'Scope', 'oauth.responseType': 'Response type',
+  'oauth.state': 'State', 'oauth.cb': 'Read a callback URL',
+  'oauth.cbPh': 'https://app.example.com/callback?code=...&state=...',
+  'oauth.cbEmpty': 'Paste the URL your browser landed on after the login.',
+  'oauth.cbError': '<strong>The server returned an error.</strong> <code>{0}</code>{1}',
+  'oauth.cbCode': 'Authorisation code received. Exchange it at the token endpoint — it is single-use and short-lived.',
+  'oauth.cbImplicit': 'A token came back in the fragment. Implicit flow is discouraged; prefer code + PKCE.',
+  'oauth.cbNothing': 'No <code>code</code>, <code>error</code> or token found in this URL.',
+  'oauth.noCrypto': 'PKCE needs the Web Crypto API, which this browser is not exposing here.',
+
+  'cv.bytes': 'Text, Base64 and hex', 'cv.text': 'Text', 'cv.textPh': 'Type here, or into any field below',
+  'cv.hex': 'Hex', 'cv.query': 'Query string and JSON', 'cv.qs': 'Query string',
+  'cv.time': 'Timestamps', 'cv.now': 'Use now', 'cv.epoch': 'Unix seconds',
+  'cv.epochms': 'Unix milliseconds', 'cv.local': 'Local time',
+  'cv.hash': 'Hash and HMAC', 'cv.message': 'Message',
+  'cv.hmacKey': 'HMAC key (leave empty for a plain hash)',
+  'cv.gen': 'Generators', 'cv.regen': 'Generate again',
+  'cv.slugIn': 'Turn a title into a slug', 'cv.slugPh': "Çorbacı Ali'nin 2. şubesi — İstanbul",
+  'cv.jwt': 'Peek inside a JWT', 'cv.jwtFull': 'Open jwtforge',
+  'cv.jwtPh': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....',
+  'cv.jwtHint': 'This only decodes. Signatures are never checked here — use jwtforge for that.',
+  'cv.jwt.shape': 'A JWT has three dot-separated parts; this one has {0}.',
+  'cv.jwt.bad': 'That is not a readable JWT: {0}',
+  'cv.jwt.jwe': 'Five parts — this is an encrypted JWE, so there is no readable payload.',
+  'cv.badTime': 'That is not a time this page can read.',
+  'cv.uuid': 'UUID v4', 'cv.hex32': 'Random hex (32 bytes)', 'cv.b64u32': 'Random Base64URL (32 bytes)',
+  'cv.nonce': 'Short nonce (16 chars)',
+  'cv.noCrypto': 'This browser is not exposing the Web Crypto API here, so hashing is unavailable.',
+
+  'ref.title': 'Which characters survive, and where', 'ref.filterPh': 'Filter by character or name',
+  'ref.cat.all': 'Every character', 'ref.cat.unreserved': 'Unreserved',
+  'ref.cat.gen': 'Reserved · gen-delims', 'ref.cat.sub': 'Reserved · sub-delims',
+  'ref.cat.other': 'Everything else',
+  'ref.lede': 'RFC 3986 splits characters into unreserved ones, which never need escaping, and reserved ones, which carry meaning in some part of a URL and must be escaped everywhere else. A green tick means the character can appear literally in that component.',
+  'ref.th.char': 'Char', 'ref.th.code': 'Code', 'ref.th.name': 'Name', 'ref.th.class': 'Class',
+  'ref.th.form': 'Form', 'ref.th.path': 'Path', 'ref.th.queryCol': 'Query', 'ref.th.frag': 'Fragment',
+  'ref.none': 'No character matches that filter.',
+
+  'footer.line1': 'urlforge runs entirely in your browser. No analytics, no fonts, no CDN, no requests of any kind — save the page and it still works offline.',
+  'privacy.title': 'Where your data goes',
+  'privacy.p1': 'Nowhere. Every conversion on this page is plain JavaScript running inside your tab. The page loads no scripts, styles, fonts or images from anywhere else, and makes no network requests while you use it.',
+  'privacy.p2': "Only two things are stored, both in this browser's local storage and only on this device: your language and theme choice, and nothing else. Clearing site data removes them.",
+  'privacy.p3': '“Copy workspace link” puts your current input into the link’s fragment. Fragments are never sent to a server, but anyone you send the link to can read it — so treat a shared link like the data it carries.',
+  'shortcuts.title': 'Keyboard shortcuts',
+  'sc.tabs': '+ 1 … 6 — jump to a tool', 'sc.encode': 'Switch to encoding', 'sc.decode': 'Switch to decoding',
+  'sc.swap': 'Move the output back into the input', 'sc.copy': 'Copy the output',
+  'sc.clear': 'Clear the current tool', 'sc.help': 'Open this list'
+},
+tr: {
+  'brand.tag': 'URL ve kodlama tezgâhı',
+  'badge.offline': 'Çevrimdışı · hiçbir şey gönderilmez',
+  'privacy.tip': 'Her şey tarayıcınızda çalışır. Ayrıntı için tıklayın.',
+  'share.tip': 'Bu çalışma alanını geri getiren bir bağlantı kopyala',
+  'btn.share': 'Çalışma bağlantısını kopyala',
+  'theme.light': 'Açık', 'theme.dark': 'Koyu', 'theme.system': 'Sistem',
+  'shortcuts.tip': 'Klavye kısayolları',
+  'tab.codec': 'Kodla & çöz', 'tab.inspect': 'URL incele', 'tab.batch': 'Toplu işlem',
+  'tab.request': 'İstek kur', 'tab.convert': 'Dönüştür', 'tab.reference': 'Başvuru',
+  'btn.clear': 'Temizle', 'btn.copy': 'Kopyala', 'btn.copyOut': 'Çıktıyı kopyala', 'btn.close': 'Kapat',
+  'btn.remove': 'Sil',
+  'toast.copied': 'Kopyalandı', 'toast.copyFailed': 'Tarayıcı kopyalamayı reddetti. Metni seçerek kopyalayın.',
+  'toast.nothing': 'Kopyalanacak bir şey yok', 'toast.linkCopied': 'Çalışma bağlantısı kopyalandı',
+  'toast.restored': 'Çalışma alanı bağlantıdan geri yüklendi',
+
+  'codec.scheme': 'Kodlama şeması', 'codec.encode': 'Kodla', 'codec.decode': 'Çöz',
+  'codec.opt.deep': 'Değişmeyi bırakana kadar çözmeye devam et',
+  'codec.opt.lossy': 'Çözülemeyen baytlarda hata vermek yerine yerine koy',
+  'codec.opt.lines': 'Her satırı ayrı ayrı işle',
+  'codec.workbench': 'Tezgâh', 'codec.swap': 'Çıktıyı girdiye taşı', 'codec.sample': 'Örnek yükle',
+  'codec.in': 'Girdi', 'codec.out': 'Çıktı',
+  'codec.in.ph': 'Bir URL, bir parametre değeri ya da herhangi bir metin yapıştırın',
+  'meter.chars': 'Karakter', 'meter.bytes': 'UTF-8 bayt', 'meter.delta': 'Değişim',
+  'codec.map': 'Karakter karakter ne değişti',
+  'codec.map.hint': 'Vurgulanan hücreler yeniden yazıldı. Alt satır her birinin neye dönüştüğünü gösterir.',
+  'codec.map.none': 'Hiçbir şey değişmedi — bu şema için her karakter zaten güvenliydi.',
+  'codec.map.na': 'Bu şema baytları yeniden gruplar, gösterilecek karakter karşılığı yok.',
+  'codec.empty': 'Yukarıya bir şey yazın ya da yapıştırın, burada görünsün.',
+  'codec.map.big': '{1} karakterin ilk {0} tanesi gösteriliyor.',
+  'codec.layers': 'Kodlama katmanları',
+  'codec.layer.input': 'girildiği gibi', 'codec.layer.pass': '{0}. tur',
+  'codec.layers.single': 'Bu metin yüzde kodlu değil, soyulacak bir katman yok.',
+  'codec.layers.n': 'Metin değişmeyi bırakana dek {0} kez çözüldü.',
+  'codec.err.percent': '{0}. konumda bozuk yüzde kaçışı: <code>{1}</code> iki onaltılık basamak değil.',
+  'codec.err.utf8': '{0}. konumdaki yüzde kaçışları geçerli UTF-8 değil.',
+  'codec.err.b64': 'Bu geçerli bir Base64 değil.',
+  'codec.err.hexlen': 'Onaltılık dizgide basamak sayısı çift olmalı.',
+  'codec.err.hexchar': 'Onaltılık basamak değil: <code>{0}</code>.',
+  'codec.err.punycode': 'Bu alan adı dönüştürülemiyor: {0}',
+  'codec.ok.lossy': 'Çözülemeyen baytların yerine U+FFFD kondu.',
+  'codec.double': 'Bu çift kodlanmış görünüyor: bir kez çözdükten sonra hâlâ yüzde kaçışları kalıyor.',
+  'codec.noop': 'Kodlamak hiçbir şeyi değiştirmiyor — tüm karakterler zaten güvenli.',
+
+  'sch.component.n': 'encodeURIComponent', 'sch.component.d': 'Tek bir parametre değeri veya yol parçası için olağan seçim.',
+  'sch.uri.n': 'encodeURI', 'sch.uri.d': ':/?#[]@ dokunulmadan kalır, bütün bir URL sağ çıkar.',
+  'sch.rfc3986.n': 'RFC 3986 katı', 'sch.rfc3986.d': "encodeURIComponent gibi, ayrıca ! ' ( ) * kaçışlanır.",
+  'sch.form.n': 'Form verisi', 'sch.form.d': 'application/x-www-form-urlencoded — boşluk + olur.',
+  'sch.path.n': 'Yol parçası', 'sch.path.d': 'Tek bir parça içinde güvenli; / kaçışlanır.',
+  'sch.fragment.n': 'Fragment', 'sch.fragment.d': '# işaretinden sonra nelere izin var.',
+  'sch.all.n': 'Her bayt', 'sch.all.d': 'A–Z dahil her şeyi yüzde kodlar.',
+  'sch.b64.n': 'Base64', 'sch.b64.d': 'Standart alfabe, = dolgusuyla.',
+  'sch.b64u.n': 'Base64URL', 'sch.b64u.d': 'URL-güvenli alfabe, dolgusuz — JWT tarzı.',
+  'sch.hex.n': 'Hex kaçışları', 'sch.hex.d': 'Baytlar \\xNN olarak; kabuk ve günlüklerdeki hâli.',
+  'sch.unicode.n': 'Unicode kaçışları', 'sch.unicode.d': 'Karakterler \\uXXXX olarak; JSON ve JS gibi.',
+  'sch.html.n': 'HTML varlıkları', 'sch.html.d': '& < > " \\u0027 kaçışlanır, URL işaretleme içinde sağ kalır.',
+  'sch.puny.n': 'Punycode / IDN', 'sch.puny.d': 'Uluslararası alan adını xn-- biçimine ve geri çevirir.',
+
+  'insp.title': 'URL', 'insp.normalize': 'Normalle', 'insp.copy': 'Yeniden kurulan URL’yi kopyala',
+  'insp.ph': 'https://api.ornek.com/v2/ara?q=kebap%20%C3%A7orba&sayfa=2#sonuclar',
+  'insp.parts': 'Parçalar', 'insp.findings': 'Bulgular', 'insp.query': 'Sorgu parametreleri',
+  'insp.plus': '<code>+</code> işaretini boşluk say', 'insp.addParam': 'Parametre ekle',
+  'insp.sort': 'Ada göre sırala', 'insp.asJson': 'JSON olarak kopyala',
+  'insp.th.name': 'Ad', 'insp.th.value': 'Değer (çözülmüş)', 'insp.th.raw': 'Ham',
+  'insp.th.notes': 'Notlar', 'insp.th.decoded': 'Çözülmüş',
+  'insp.segments': 'Yol parçaları', 'insp.compare': 'Başka bir URL ile karşılaştır',
+  'insp.cmpSwap': 'Tarafları değiştir', 'insp.cmpPh': 'Karşılaştırılacak URL',
+  'insp.empty': 'Yukarıya bir URL yapıştırın, burada parçalarına ayrılsın.',
+  'insp.relative': 'Bu göreli bir adres, şeması ve alan adı yok. Parçaları göstermek için <code>{0}</code> üzerinde çözüldü.',
+  'insp.invalid': 'Bu bir URL olarak okunamıyor: {0}',
+  'insp.noparams': 'Sorgu parametresi yok.', 'insp.nosegments': 'Yol parçası yok.',
+  'insp.clean': 'İşaretlenecek bir şey yok.',
+  'insp.part.scheme': 'Şema', 'insp.part.user': 'Kullanıcı bilgisi', 'insp.part.host': 'Alan adı',
+  'insp.part.hostUnicode': 'Alan adı (unicode)', 'insp.part.port': 'Port', 'insp.part.path': 'Yol',
+  'insp.part.query': 'Sorgu', 'insp.part.fragment': 'Fragment', 'insp.part.origin': 'Origin',
+  'insp.part.length': 'Uzunluk', 'insp.part.params': 'Parametre',
+  'insp.none': 'yok', 'insp.default': 'şemanın varsayılanı',
+  'insp.cmp.same': 'Normallendikten sonra bu iki URL aynı.',
+  'insp.cmp.diff': '{0} fark.',
+  'insp.cmp.paramOnly': 'yalnızca {0} tarafta',
+  'insp.left': 'sol', 'insp.right': 'sağ',
+  'insp.normalized': 'Normallendi.', 'insp.normalNoop': 'Zaten normal.',
+  'note.plus': '+ içeriyor', 'note.double': 'çift kodlu', 'note.json': 'JSON',
+  'note.empty': 'boş', 'note.novalue': '= yok', 'note.dup': 'tekrar eden', 'note.b64': 'Base64 gibi',
+  'note.url': 'URL', 'note.jwt': 'JWT',
+
+  'f.credentials': '<strong>URL içinde kimlik bilgisi.</strong> <code>{0}</code> günlüklere, vekil sunuculara ve geçmişe düşer. Bunu başlıkla gönderin.',
+  'f.unencodedSpace': 'URL içinde <strong>düz boşluk</strong> var. <code>%20</code> olmalı; form kodlu sorguda <code>+</code>.',
+  'f.doubleEncoded': '<strong>{0}</strong> çift kodlu görünüyor — bir kez çözünce <code>{1}</code> kalıyor, o da hâlâ kaçışlı.',
+  'f.unicodeHost': '<strong>ASCII olmayan alan adı.</strong> <code>{0}</code> ağa <code>{1}</code> olarak çıkmalı.',
+  'f.reservedRaw': 'Parametre değeri içinde <strong>kaçışlanmamış <code>{0}</code></strong> sorgunun nerede bittiğini değiştirir.',
+  'f.longUrl': '<strong>{0} karakter uzunluğunda.</strong> Bazı vekil sunucular ve sunucular 2 000 civarında keser; IE hiçbir zaman 2 083’ü geçmedi.',
+  'f.noScheme': '<strong>Şema yok.</strong> Protokolden bağımsız ya da çıplak adres, bulunduğu sayfaya göre farklı davranır.',
+  'f.httpPlain': '<strong>Düz http.</strong> Sorgu dahil bu URL’deki her şey ağı açık geçer.',
+  'f.defaultPort': '<code>{0}</code> portu <code>{1}</code> için varsayılandır, yazılmasa da olur.',
+  'f.dotSegments': 'Yolda <code>.</code> veya <code>..</code> parçaları var; sonuç <code>{0}</code>.',
+  'f.uppercaseEscape': 'Yüzde kaçışları bazı yerlerde küçük harf; RFC 3986 büyük harf onaltılık ister.',
+  'f.emptyParam': '<strong>{0}</strong> değersiz. Sunucular bunun boş mu yoksa yok mu sayılacağında anlaşmaz.',
+  'f.dupParam': '<strong>{0}</strong> {1} kez geçiyor. Çatılar farklı davranır: kimi ilkini, kimi sonuncusunu alır, kimi liste kurar.',
+  'f.secretish': '<strong>{0}</strong> gizli bir değere benziyor. Sorgu dizgileri sunucu günlüklerine ve Referer başlığına düşer.',
+  'f.trailingChars': 'URL <code>{0}</code> ile bitiyor; bu genelde kopyalama artığıdır.',
+  'f.mixedCase': 'Alan adında büyük harf var. Alan adları büyük-küçük harf ayırmaz, küçük yazılır.',
+
+  'batch.title': 'Tek işlem, bütün satırlar', 'batch.run': 'Çalıştır', 'batch.download': 'İndir',
+  'batch.dedupe': 'Yinelenenleri at', 'batch.sort': 'Sonucu sırala', 'batch.skipblank': 'Boş satırları atla',
+  'batch.format': 'İndirme biçimi', 'batch.in': 'Girdi satırları', 'batch.out': 'Sonuç',
+  'batch.ph': 'Her satıra bir değer ya da URL', 'batch.lines': 'Satır', 'batch.failed': 'Başarısız',
+  'batch.done': '{0} satır işlendi, {1} tanesi başarısız.', 'batch.empty': 'Önce birkaç satır girin.',
+  'batch.dl': '{0} indirildi',
+  'op.encComponent': 'Kodla · encodeURIComponent', 'op.decComponent': 'Çöz · yüzde',
+  'op.encForm': 'Kodla · form verisi', 'op.decForm': 'Çöz · form verisi',
+  'op.encB64u': 'Kodla · Base64URL', 'op.decB64u': 'Çöz · Base64URL',
+  'op.deepDecode': 'Değişmeyi bırakana kadar çöz', 'op.normalize': 'URL’yi normalle',
+  'op.host': 'Yalnızca alan adı', 'op.origin': 'Yalnızca origin', 'op.path': 'Yalnızca yol',
+  'op.strip': 'Sorgu ve fragment’ı at', 'op.qjson': 'Sorgu dizgisinden JSON’a',
+  'op.slug': 'Slug üret', 'op.puny': 'Alan adını punycode’a', 'op.lower': 'Küçük harfe çevir',
+
+  'req.title': 'İstek', 'req.urlPh': 'https://api.ornek.com/v2/siparisler',
+  'req.headers': 'Başlıklar', 'req.addHeader': 'Başlık ekle', 'req.body': 'Gövde',
+  'req.body.none': 'Gövde yok', 'req.body.raw': 'Düz metin', 'req.pretty': 'JSON’u düzelt',
+  'req.bodyPh': '{ "sku": "ABC-1", "adet": 2 }',
+  'req.import': 'Bir curl komutundan başla', 'req.importBtn': 'Formu doldur',
+  'req.curlPh': "curl -X POST 'https://api.ornek.com/v2/siparisler' -H 'Authorization: Bearer ...' -d '{...}'",
+  'req.curlHint': 'Tarayıcınızdaki “Copy as cURL” çıktısını yapıştırın. Satır devamı, tırnaklama ve <code>--data-urlencode</code> işlenir.',
+  'req.snippet': 'Kod parçası', 'req.hName': 'Başlık', 'req.hValue': 'Değer',
+  'req.imported': '{0} başlık{1} alındı.', 'req.withBody': ' ve bir gövde',
+  'req.curlEmpty': 'Önce bir curl komutu yapıştırın.',
+  'req.curlNotCurl': 'Bu <code>curl</code> ile başlamıyor.',
+  'req.badJson': 'Gövde geçerli JSON değil: {0}',
+  'req.jsonTidied': 'JSON düzeltildi.',
+  'req.noUrl': 'Bir URL girin, kod parçası kendiliğinden oluşsun.',
+
+  'oauth.title': 'OAuth 2.0 yetkilendirme URL’si', 'oauth.pkce': 'PKCE çifti üret',
+  'oauth.endpoint': 'Yetkilendirme uç noktası', 'oauth.clientId': 'Client ID',
+  'oauth.redirect': 'Redirect URI', 'oauth.scope': 'Scope', 'oauth.responseType': 'Response type',
+  'oauth.state': 'State', 'oauth.cb': 'Callback URL’sini oku',
+  'oauth.cbPh': 'https://uygulama.ornek.com/callback?code=...&state=...',
+  'oauth.cbEmpty': 'Giriş sonrası tarayıcının düştüğü URL’yi yapıştırın.',
+  'oauth.cbError': '<strong>Sunucu hata döndürdü.</strong> <code>{0}</code>{1}',
+  'oauth.cbCode': 'Yetkilendirme kodu geldi. Token uç noktasında takas edin — tek kullanımlık ve kısa ömürlüdür.',
+  'oauth.cbImplicit': 'Fragment içinde token döndü. Implicit akış önerilmiyor; code + PKCE tercih edin.',
+  'oauth.cbNothing': 'Bu URL’de <code>code</code>, <code>error</code> ya da token bulunamadı.',
+  'oauth.noCrypto': 'PKCE, Web Crypto API gerektirir; bu tarayıcı burada onu açmıyor.',
+
+  'cv.bytes': 'Metin, Base64 ve hex', 'cv.text': 'Metin', 'cv.textPh': 'Buraya ya da aşağıdaki alanlardan birine yazın',
+  'cv.hex': 'Hex', 'cv.query': 'Sorgu dizgisi ve JSON', 'cv.qs': 'Sorgu dizgisi',
+  'cv.time': 'Zaman damgaları', 'cv.now': 'Şu anı al', 'cv.epoch': 'Unix saniye',
+  'cv.epochms': 'Unix milisaniye', 'cv.local': 'Yerel saat',
+  'cv.hash': 'Özet ve HMAC', 'cv.message': 'Mesaj',
+  'cv.hmacKey': 'HMAC anahtarı (düz özet için boş bırakın)',
+  'cv.gen': 'Üreteçler', 'cv.regen': 'Yeniden üret',
+  'cv.slugIn': 'Başlıktan slug üret', 'cv.slugPh': "Çorbacı Ali'nin 2. şubesi — İstanbul",
+  'cv.jwt': 'JWT’nin içine bak', 'cv.jwtFull': 'jwtforge’u aç',
+  'cv.jwtPh': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....',
+  'cv.jwtHint': 'Burada yalnızca çözülür. İmza hiç doğrulanmaz — onun için jwtforge.',
+  'cv.jwt.shape': 'JWT noktayla ayrılmış üç parçadan oluşur; bunda {0} parça var.',
+  'cv.jwt.bad': 'Bu okunabilir bir JWT değil: {0}',
+  'cv.jwt.jwe': 'Beş parça — bu şifreli bir JWE, okunabilir bir yük yok.',
+  'cv.badTime': 'Bu sayfanın okuyabileceği bir zaman değil.',
+  'cv.uuid': 'UUID v4', 'cv.hex32': 'Rastgele hex (32 bayt)', 'cv.b64u32': 'Rastgele Base64URL (32 bayt)',
+  'cv.nonce': 'Kısa nonce (16 karakter)',
+  'cv.noCrypto': 'Bu tarayıcı burada Web Crypto API’yi açmıyor, özet alınamıyor.',
+  'cv.hashing': 'Özet alınıyor…',
+
+  'ref.title': 'Hangi karakter nerede sağ kalır', 'ref.filterPh': 'Karaktere ya da ada göre süz',
+  'ref.cat.all': 'Bütün karakterler', 'ref.cat.unreserved': 'Unreserved',
+  'ref.cat.gen': 'Reserved · gen-delims', 'ref.cat.sub': 'Reserved · sub-delims',
+  'ref.cat.other': 'Geri kalan her şey',
+  'ref.lede': 'RFC 3986 karakterleri ikiye ayırır: hiç kaçışlanması gerekmeyen unreserved karakterler ve URL’nin bir yerinde anlam taşıyan, dolayısıyla başka her yerde kaçışlanması gereken reserved karakterler. Yeşil onay, karakterin o bölümde olduğu gibi durabileceği anlamına gelir.',
+  'ref.th.char': 'Karakter', 'ref.th.code': 'Kod', 'ref.th.name': 'Ad', 'ref.th.class': 'Sınıf',
+  'ref.th.form': 'Form', 'ref.th.path': 'Yol', 'ref.th.queryCol': 'Sorgu', 'ref.th.frag': 'Fragment',
+  'ref.none': 'Bu süzgece uyan karakter yok.',
+
+  'footer.line1': 'urlforge tamamen tarayıcınızda çalışır. Analitik yok, yazı tipi yok, CDN yok, hiçbir istek yok — sayfayı kaydedin, çevrimdışı da çalışır.',
+  'privacy.title': 'Verileriniz nereye gidiyor',
+  'privacy.p1': 'Hiçbir yere. Bu sayfadaki her dönüşüm, sekmenizin içinde çalışan düz JavaScript’tir. Sayfa dışarıdan betik, stil, yazı tipi ya da görsel yüklemez ve siz kullanırken hiçbir ağ isteği yapmaz.',
+  'privacy.p2': 'Yalnızca iki şey saklanır, o da bu tarayıcının yerel deposunda ve sadece bu cihazda: dil ve tema tercihiniz. Başka hiçbir şey. Site verilerini silmek bunları da siler.',
+  'privacy.p3': '“Çalışma bağlantısını kopyala”, o anki girdinizi bağlantının fragment kısmına koyar. Fragment sunucuya hiç gitmez ama bağlantıyı gönderdiğiniz herkes onu okuyabilir — paylaştığınız bağlantıya taşıdığı veri gibi davranın.',
+  'shortcuts.title': 'Klavye kısayolları',
+  'sc.tabs': '+ 1 … 6 — araca atla', 'sc.encode': 'Kodlamaya geç', 'sc.decode': 'Çözmeye geç',
+  'sc.swap': 'Çıktıyı girdiye geri taşı', 'sc.copy': 'Çıktıyı kopyala',
+  'sc.clear': 'Bu aracı temizle', 'sc.help': 'Bu listeyi aç'
+}
+};
+
+let LANG = 'en';
+function t(key) {
+  const dict = I18N[LANG] || I18N.en;
+  let s = (key in dict) ? dict[key] : (I18N.en[key] != null ? I18N.en[key] : key);
+  for (let i = 1; i < arguments.length; i++) s = s.split('{' + (i - 1) + '}').join(arguments[i]);
+  return s;
+}
+function setNode(node, s) { if (/[<&]/.test(s)) node.innerHTML = s; else node.textContent = s; }
+
+function applyLang(lang) {
+  LANG = (lang === 'tr') ? 'tr' : 'en';
+  document.documentElement.lang = LANG;
+  document.documentElement.dataset.lang = LANG;
+  try { localStorage.setItem('urlforge.lang', LANG); } catch (e) {}
+  $$('[data-i18n]').forEach(n => setNode(n, t(n.dataset.i18n)));
+  $$('[data-i18n-ph]').forEach(n => n.placeholder = t(n.dataset.i18nPh));
+  $$('[data-i18n-title]').forEach(n => n.title = t(n.dataset.i18nTitle));
+  $$('[data-lang-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.langSet === LANG)));
+  document.title = 'urlforge — ' + t('brand.tag');
+  rebuildDynamic();
+}
+
+/* ---- theme ---- */
+function applyTheme(mode) {
+  try { localStorage.setItem('urlforge.theme', mode); } catch (e) {}
+  const dark = mode === 'dark' || (mode === 'system' && !window.matchMedia('(prefers-color-scheme: light)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  $$('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === mode)));
+}
+
+/* ---- toast & clipboard ---- */
+let toastTimer;
+function toast(msg) {
+  const n = $('#toast'); n.textContent = msg; n.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => n.classList.remove('show'), 2000);
+}
+async function copy(text) {
+  if (!text) { toast(t('toast.nothing')); return; }
+  try { await navigator.clipboard.writeText(text); toast(t('toast.copied')); }
+  catch (e) {
+    const ta = el('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+    ta.remove(); toast(ok ? t('toast.copied') : t('toast.copyFailed'));
+  }
+}
+function status(node, kind, html) {
+  node.innerHTML = '';
+  if (!html) return;
+  const d = el('div', 'notice notice-' + kind); setNode(d, html); node.appendChild(d);
+}
+
+/* ======================================================================
+   2. Encoding primitives
+   ====================================================================== */
+const TE = new TextEncoder();
+const TD_STRICT = new TextDecoder('utf-8', { fatal: true });
+const TD_LOSSY = new TextDecoder('utf-8');
+
+const ALNUM = c => (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+const setOf = str => { const s = new Set(); for (const ch of str) s.add(ch.charCodeAt(0)); return s; };
+const UNRESERVED_EXTRA = setOf('-._~');
+const MARK = setOf("!'()*");
+const URI_EXTRA = setOf(";,/?:@&=+$#");
+const SUB_DELIMS = setOf("!$&'()*+,;=");
+
+const SAFE = {
+  unreserved: c => ALNUM(c) || UNRESERVED_EXTRA.has(c),
+  component:  c => ALNUM(c) || UNRESERVED_EXTRA.has(c) || MARK.has(c),
+  uri:        c => ALNUM(c) || UNRESERVED_EXTRA.has(c) || MARK.has(c) || URI_EXTRA.has(c),
+  form:       c => ALNUM(c) || c === 42 || c === 45 || c === 46 || c === 95,
+  path:       c => ALNUM(c) || UNRESERVED_EXTRA.has(c) || SUB_DELIMS.has(c) || c === 58 || c === 64,
+  fragment:   c => ALNUM(c) || UNRESERVED_EXTRA.has(c) || SUB_DELIMS.has(c) || c === 58 || c === 64 || c === 47 || c === 63,
+  none:       () => false
+};
+
+const hex2 = b => b.toString(16).toUpperCase().padStart(2, '0');
+
+function pctEncode(str, safe, plusForSpace) {
+  const bytes = TE.encode(str); let out = '';
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i];
+    if (plusForSpace && b === 32) out += '+';
+    else if (safe(b)) out += String.fromCharCode(b);
+    else out += '%' + hex2(b);
+  }
+  return out;
+}
+
+/* Returns the byte offset of the first invalid UTF-8 sequence, or -1. */
+function utf8FirstError(b) {
+  let i = 0;
+  while (i < b.length) {
+    const c = b[i];
+    if (c < 0x80) { i++; continue; }
+    let n, cp;
+    if (c >= 0xC2 && c <= 0xDF) { n = 1; cp = c & 0x1F; }
+    else if (c >= 0xE0 && c <= 0xEF) { n = 2; cp = c & 0x0F; }
+    else if (c >= 0xF0 && c <= 0xF4) { n = 3; cp = c & 0x07; }
+    else return i;
+    if (i + n > b.length - 1) return i;
+    for (let k = 1; k <= n; k++) {
+      const cc = b[i + k];
+      if ((cc & 0xC0) !== 0x80) return i;
+      cp = (cp << 6) | (cc & 0x3F);
+    }
+    if (n === 2 && (cp < 0x800 || (cp >= 0xD800 && cp <= 0xDFFF))) return i;
+    if (n === 3 && (cp < 0x10000 || cp > 0x10FFFF)) return i;
+    i += n + 1;
+  }
+  return -1;
+}
+
+/* Percent-decodes, and reports exactly where it broke.
+   Returns { ok, value, pairs, sawPercent, replaced, err } */
+function pctDecode(str, opts) {
+  opts = opts || {};
+  const bytes = [], from = [], to = [];
+  let i = 0, sawPercent = false;
+  while (i < str.length) {
+    const c = str[i];
+    if (c === '%') {
+      const h = str.substr(i + 1, 2);
+      if (!/^[0-9a-fA-F]{2}$/.test(h)) {
+        return { ok: false, err: { code: 'percent', index: i, text: str.substr(i, 3) } };
+      }
+      bytes.push(parseInt(h, 16)); from.push(i); to.push(i + 3); i += 3; sawPercent = true;
+    } else if (opts.plus && c === '+') {
+      bytes.push(32); from.push(i); to.push(i + 1); i += 1;
+    } else {
+      const cp = str.codePointAt(i);
+      const ch = String.fromCodePoint(cp);
+      const bs = TE.encode(ch);
+      for (let k = 0; k < bs.length; k++) { bytes.push(bs[k]); from.push(i); to.push(i + ch.length); }
+      i += ch.length;
+    }
+  }
+  const arr = new Uint8Array(bytes);
+  const bad = utf8FirstError(arr);
+  if (bad >= 0 && !opts.lossy) {
+    return { ok: false, err: { code: 'utf8', index: from[bad] != null ? from[bad] : 0 } };
+  }
+  const value = (bad >= 0 ? TD_LOSSY : TD_STRICT).decode(arr);
+
+  /* Walk the byte run again so every decoded character keeps its source text. */
+  const pairs = []; let bi = 0;
+  for (const ch of value) {
+    const n = TE.encode(ch).length;
+    const src = (from[bi] != null) ? str.slice(from[bi], to[Math.min(bi + n - 1, to.length - 1)]) : ch;
+    pairs.push({ src: src, out: ch });
+    bi += n;
+  }
+  return { ok: true, value: value, pairs: pairs, sawPercent: sawPercent, replaced: bad >= 0 };
+}
+
+/* ---- Base64 ---- */
+function bytesToB64(bytes, url) {
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  let o = btoa(s);
+  if (url) o = o.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return o;
+}
+function b64ToBytes(str) {
+  let s = String(str).replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  const pad = s.length % 4;
+  if (pad === 1) throw new Error('length');
+  if (pad) s += '='.repeat(4 - pad);
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(s)) throw new Error('alphabet');
+  const bin = atob(s);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/* ---- Hex ---- */
+/* Percent escapes stay upper-case per RFC 3986; a plain hex dump reads better lower-case. */
+function bytesToHexStr(bytes, sep) {
+  let o = [];
+  for (let i = 0; i < bytes.length; i++) o.push(hex2(bytes[i]).toLowerCase());
+  return o.join(sep == null ? '' : sep);
+}
+function hexToBytes(str) {
+  const s = String(str).replace(/0x/gi, '').replace(/[\s,:-]/g, '');
+  if (s.length % 2) throw new Error('hexlen');
+  const bad = s.match(/[^0-9a-fA-F]/);
+  if (bad) { const e = new Error('hexchar'); e.ch = bad[0]; throw e; }
+  const out = new Uint8Array(s.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.substr(i * 2, 2), 16);
+  return out;
+}
+
+/* ---- Punycode (RFC 3492) ---- */
+const PUNY = (function () {
+  const base = 36, tmin = 1, tmax = 26, skew = 38, damp = 700;
+  const initialBias = 72, initialN = 128, delim = '-', maxInt = 2147483647;
+  const adapt = (delta, n, first) => {
+    delta = first ? Math.floor(delta / damp) : delta >> 1;
+    delta += Math.floor(delta / n);
+    let k = 0;
+    for (; delta > ((base - tmin) * tmax) >> 1; k += base) delta = Math.floor(delta / (base - tmin));
+    return k + Math.floor((base - tmin + 1) * delta / (delta + skew));
+  };
+  const threshold = (k, bias) => k <= bias ? tmin : (k >= bias + tmax ? tmax : k - bias);
+  const digitToBasic = d => d + 22 + (d < 26 ? 75 : 0);
+  const basicToDigit = cp => (cp - 48 < 10) ? cp - 22 : (cp - 65 < 26) ? cp - 65 : (cp - 97 < 26) ? cp - 97 : base;
+
+  function encode(input) {
+    const cps = Array.from(input).map(c => c.codePointAt(0));
+    const out = cps.filter(c => c < 128).map(c => String.fromCharCode(c));
+    const basicLength = out.length;
+    let handled = basicLength, n = initialN, delta = 0, bias = initialBias;
+    if (basicLength) out.push(delim);
+    while (handled < cps.length) {
+      let m = maxInt;
+      for (const cp of cps) if (cp >= n && cp < m) m = cp;
+      if (m - n > Math.floor((maxInt - delta) / (handled + 1))) throw new RangeError('overflow');
+      delta += (m - n) * (handled + 1); n = m;
+      for (const cp of cps) {
+        if (cp < n && ++delta > maxInt) throw new RangeError('overflow');
+        if (cp !== n) continue;
+        let q = delta;
+        for (let k = base; ; k += base) {
+          const tt = threshold(k, bias);
+          if (q < tt) break;
+          out.push(String.fromCharCode(digitToBasic(tt + (q - tt) % (base - tt))));
+          q = Math.floor((q - tt) / (base - tt));
+        }
+        out.push(String.fromCharCode(digitToBasic(q)));
+        bias = adapt(delta, handled + 1, handled === basicLength);
+        delta = 0; handled++;
+      }
+      delta++; n++;
+    }
+    return out.join('');
+  }
+
+  function decode(input) {
+    const out = [];
+    let n = initialN, i = 0, bias = initialBias;
+    let basic = input.lastIndexOf(delim);
+    if (basic < 0) basic = 0;
+    for (let j = 0; j < basic; j++) {
+      if (input.charCodeAt(j) >= 0x80) throw new RangeError('not-basic');
+      out.push(input.charCodeAt(j));
+    }
+    for (let index = basic > 0 ? basic + 1 : 0; index < input.length;) {
+      const oldi = i;
+      for (let w = 1, k = base; ; k += base) {
+        if (index >= input.length) throw new RangeError('invalid-input');
+        const digit = basicToDigit(input.charCodeAt(index++));
+        if (digit >= base || digit > Math.floor((maxInt - i) / w)) throw new RangeError('invalid-input');
+        i += digit * w;
+        const tt = threshold(k, bias);
+        if (digit < tt) break;
+        if (w > Math.floor(maxInt / (base - tt))) throw new RangeError('overflow');
+        w *= (base - tt);
+      }
+      const len = out.length + 1;
+      bias = adapt(i - oldi, len, oldi === 0);
+      if (Math.floor(i / len) > maxInt - n) throw new RangeError('overflow');
+      n += Math.floor(i / len); i %= len;
+      out.splice(i++, 0, n);
+    }
+    return String.fromCodePoint.apply(String, out);
+  }
+
+  return {
+    toASCII: d => String(d).split('.').map(l => /[^\x00-\x7F]/.test(l) ? 'xn--' + encode(l.toLowerCase()) : l).join('.'),
+    toUnicode: d => String(d).split('.').map(l => /^xn--/i.test(l) ? decode(l.slice(4).toLowerCase()) : l).join('.')
+  };
+})();
+
+/* ======================================================================
+   3. Schemes
+   ====================================================================== */
+function perChar(str, fn) {
+  let out = ''; const pairs = [];
+  for (const ch of str) { const o = fn(ch); out += o; pairs.push({ src: ch, out: o }); }
+  return { ok: true, value: out, pairs: pairs };
+}
+const pctScheme = (safeKey, plus) => ({
+  perChar: true,
+  encode: s => perChar(s, ch => pctEncode(ch, SAFE[safeKey], plus)),
+  decode: (s, o) => pctDecode(s, { plus: !!plus || !!o.plus, lossy: o.lossy })
+});
+
+const HTML_ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const HTML_REV = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'", nbsp: ' ' };
+
+const SCHEMES = {
+  component: pctScheme('component', false),
+  uri:       pctScheme('uri', false),
+  rfc3986:   pctScheme('unreserved', false),
+  form:      pctScheme('form', true),
+  path:      pctScheme('path', false),
+  fragment:  pctScheme('fragment', false),
+  all:       pctScheme('none', false),
+
+  b64: {
+    perChar: false,
+    encode: s => ({ ok: true, value: bytesToB64(TE.encode(s), false) }),
+    decode: (s, o) => decodeBytesScheme(s, o, b64ToBytes, 'b64')
+  },
+  b64u: {
+    perChar: false,
+    encode: s => ({ ok: true, value: bytesToB64(TE.encode(s), true) }),
+    decode: (s, o) => decodeBytesScheme(s, o, b64ToBytes, 'b64')
+  },
+  hex: {
+    perChar: true,
+    encode: s => perChar(s, ch => {
+      const b = TE.encode(ch); let o = '';
+      for (let i = 0; i < b.length; i++) o += '\\x' + hex2(b[i]);
+      return o;
+    }),
+    decode: (s, o) => {
+      const bytes = [];
+      let i = 0;
+      while (i < s.length) {
+        const m = /^(?:\\x|%|0x)([0-9a-fA-F]{2})/.exec(s.slice(i));
+        if (m) { bytes.push(parseInt(m[1], 16)); i += m[0].length; continue; }
+        const ch = String.fromCodePoint(s.codePointAt(i));
+        const bs = TE.encode(ch);
+        for (let k = 0; k < bs.length; k++) bytes.push(bs[k]);
+        i += ch.length;
+      }
+      return bytesToText(new Uint8Array(bytes), o);
+    }
+  },
+  unicode: {
+    perChar: true,
+    encode: s => perChar(s, ch => {
+      const cp = ch.codePointAt(0);
+      if (cp < 0x80) return ch;
+      let o = '';
+      for (let i = 0; i < ch.length; i++) o += '\\u' + ch.charCodeAt(i).toString(16).toUpperCase().padStart(4, '0');
+      return o;
+    }),
+    decode: s => {
+      const pairs = [];
+      let out = '', i = 0;
+      while (i < s.length) {
+        const m = /^\\u\{([0-9a-fA-F]{1,6})\}|^\\u([0-9a-fA-F]{4})/.exec(s.slice(i));
+        if (m) {
+          const ch = String.fromCodePoint(parseInt(m[1] || m[2], 16));
+          out += ch; pairs.push({ src: m[0], out: ch }); i += m[0].length;
+        } else { out += s[i]; pairs.push({ src: s[i], out: s[i] }); i++; }
+      }
+      return { ok: true, value: out, pairs: pairs };
+    }
+  },
+  html: {
+    perChar: true,
+    encode: s => perChar(s, ch => HTML_ENT[ch] || ch),
+    decode: s => {
+      const pairs = [];
+      let out = '', i = 0;
+      while (i < s.length) {
+        const m = /^&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z][a-zA-Z0-9]*);/.exec(s.slice(i));
+        if (m) {
+          const body = m[1];
+          let ch;
+          if (body[0] === '#') ch = String.fromCodePoint(body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10));
+          else ch = HTML_REV[body.toLowerCase()];
+          if (ch == null) { out += s[i]; pairs.push({ src: s[i], out: s[i] }); i++; continue; }
+          out += ch; pairs.push({ src: m[0], out: ch }); i += m[0].length;
+        } else { out += s[i]; pairs.push({ src: s[i], out: s[i] }); i++; }
+      }
+      return { ok: true, value: out, pairs: pairs };
+    }
+  },
+  puny: {
+    perChar: false,
+    encode: s => { try { return { ok: true, value: punyApply(s, PUNY.toASCII) }; } catch (e) { return { ok: false, err: { code: 'punycode', text: e.message } }; } },
+    decode: s => { try { return { ok: true, value: punyApply(s, PUNY.toUnicode) }; } catch (e) { return { ok: false, err: { code: 'punycode', text: e.message } }; } }
+  }
+};
+const SCHEME_ORDER = ['component', 'uri', 'rfc3986', 'form', 'path', 'fragment', 'all', 'b64', 'b64u', 'hex', 'unicode', 'html', 'puny'];
+
+/* Punycode on a whole URL rewrites only the host; on a bare string, the string. */
+function punyApply(s, fn) {
+  const m = /^([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)([^/?#]*)([\s\S]*)$/.exec(s.trim());
+  if (m) {
+    const auth = m[2];
+    const at = auth.lastIndexOf('@');
+    const userinfo = at >= 0 ? auth.slice(0, at + 1) : '';
+    let hostport = at >= 0 ? auth.slice(at + 1) : auth;
+    const pm = /^(.*?)(:\d+)?$/.exec(hostport);
+    return m[1] + userinfo + fn(pm[1]) + (pm[2] || '') + m[3];
+  }
+  return fn(s.trim());
+}
+function bytesToText(bytes, o) {
+  const bad = utf8FirstError(bytes);
+  if (bad >= 0 && !o.lossy) return { ok: false, err: { code: 'utf8', index: bad } };
+  return { ok: true, value: (bad >= 0 ? TD_LOSSY : TD_STRICT).decode(bytes), replaced: bad >= 0 };
+}
+function decodeBytesScheme(s, o, toBytes, errCode) {
+  let bytes;
+  try { bytes = toBytes(s); }
+  catch (e) { return { ok: false, err: { code: e.message === 'hexlen' ? 'hexlen' : (e.message === 'hexchar' ? 'hexchar' : errCode), ch: e.ch } }; }
+  return bytesToText(bytes, o);
+}
+
+/* Peel percent-encoding until the text stops changing. */
+function peelLayers(str, lossy) {
+  const layers = [str];
+  let cur = str;
+  for (let i = 0; i < 8; i++) {
+    if (!/%[0-9a-fA-F]{2}/.test(cur) && !/%25/.test(cur)) break;
+    const r = pctDecode(cur, { plus: false, lossy: true });
+    if (!r.ok || r.value === cur) break;
+    cur = r.value; layers.push(cur);
+  }
+  return layers;
+}
+
+/* ======================================================================
+   4. Encode & decode tab
+   ====================================================================== */
+let codecScheme = 'component';
+let codecDir = 'encode';
+
+function buildSchemeGrid() {
+  const grid = $('#scheme-grid');
+  grid.innerHTML = '';
+  SCHEME_ORDER.forEach(id => {
+    const b = el('button');
+    b.type = 'button';
+    b.dataset.scheme = id;
+    b.setAttribute('aria-pressed', String(id === codecScheme));
+    b.appendChild(el('strong', null, t('sch.' + shortName(id) + '.n')));
+    b.appendChild(el('small', null, t('sch.' + shortName(id) + '.d')));
+    b.addEventListener('click', () => { codecScheme = id; buildSchemeGrid(); runCodec(); });
+    grid.appendChild(b);
+  });
+}
+function shortName(id) { return id === 'puny' ? 'puny' : id; }
+
+function countBytes(s) { return TE.encode(s).length; }
+
+function renderCharmap(pairs, note) {
+  const wrap = $('#charmap');
+  wrap.innerHTML = '';
+  if (!pairs) {
+    const p = el('p', 'hint', note || '');
+    wrap.appendChild(p); $('#map-count').textContent = '—';
+    return;
+  }
+  const LIMIT = 420;
+  const shown = pairs.slice(0, LIMIT);
+  shown.forEach(p => {
+    const same = p.src === p.out;
+    const c = el('div', 'cm ' + (same ? 'same' : 'changed'));
+    const f = el('div', 'cm-from'); f.appendChild(visibleChar(p.src));
+    const to = el('div', 'cm-to'); to.appendChild(visibleChar(p.out));
+    c.appendChild(f); c.appendChild(to);
+    c.title = describeChar(p.src) + '  →  ' + p.out;
+    wrap.appendChild(c);
+  });
+  const totalChanged = pairs.filter(p => p.src !== p.out).length;
+  $('#map-count').textContent = String(totalChanged);
+  if (pairs.length > LIMIT) wrap.appendChild(el('p', 'hint', t('codec.map.big', LIMIT, pairs.length)));
+  else if (totalChanged === 0) wrap.appendChild(el('p', 'hint', t('codec.map.none')));
+}
+const CTRL_NAMES = { ' ': '␣', '\t': '⇥', '\n': '⏎', '\r': '⏎', '+': '+' };
+function visibleChar(s) {
+  const frag = document.createDocumentFragment();
+  if (s === ' ' || s === '\t' || s === '\n' || s === '\r') {
+    frag.appendChild(el('span', 'ws', CTRL_NAMES[s]));
+  } else {
+    frag.appendChild(document.createTextNode(s));
+  }
+  return frag;
+}
+function describeChar(s) {
+  const cp = s.codePointAt(0);
+  return s + '  U+' + cp.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function renderLayers(input, lossy) {
+  const box = $('#layers');
+  box.innerHTML = '';
+  if (!input) {
+    $('#layer-count').textContent = '—';
+    const p = el('p', 'hint', t('codec.empty')); p.style.padding = '12px'; box.appendChild(p); return;
+  }
+  const layers = peelLayers(input, lossy);
+  $('#layer-count').textContent = String(layers.length - 1);
+  layers.forEach((v, i) => {
+    const row = el('div', 'layer');
+    const tag = el('div', 'layer-tag');
+    tag.appendChild(el('b', null, i === 0 ? t('codec.layer.input') : t('codec.layer.pass', i)));
+    tag.appendChild(document.createTextNode(v.length + ' ch'));
+    const val = el('div', 'layer-val', v.length > 900 ? v.slice(0, 900) + ' …' : v);
+    row.appendChild(tag); row.appendChild(val);
+    box.appendChild(row);
+  });
+  const note = el('p', 'hint');
+  note.style.padding = '10px 12px';
+  note.textContent = layers.length === 1 ? t('codec.layers.single') : t('codec.layers.n', layers.length - 1);
+  box.appendChild(note);
+}
+
+function errText(err) {
+  switch (err.code) {
+    case 'percent': return t('codec.err.percent', err.index, err.text);
+    case 'utf8': return t('codec.err.utf8', err.index);
+    case 'b64': return t('codec.err.b64');
+    case 'hexlen': return t('codec.err.hexlen');
+    case 'hexchar': return t('codec.err.hexchar', err.ch || '?');
+    case 'punycode': return t('codec.err.punycode', err.text || '');
+    default: return String(err.code);
+  }
+}
+
+function runCodec() {
+  const input = $('#codec-in').value;
+  const opts = { lossy: $('#opt-lossy').checked, plus: false };
+  const deep = $('#opt-deep').checked;
+  const byLine = $('#opt-lines').checked;
+  const scheme = SCHEMES[codecScheme];
+  const out = $('#codec-out');
+  const st = $('#codec-status');
+
+  $('#in-chars').textContent = String(Array.from(input).length);
+  $('#in-bytes').textContent = String(countBytes(input));
+
+  if (!input) {
+    out.textContent = ''; $('#out-chars').textContent = '0'; $('#out-bytes').textContent = '0';
+    $('#out-delta').textContent = '0%';
+    status(st, 'info', '');
+    renderCharmap(null, t('codec.empty')); renderLayers('', opts.lossy);
+    return;
+  }
+
+  const one = text => {
+    let r = scheme[codecDir](text, opts);
+    if (r.ok && codecDir === 'decode' && deep) {
+      let guard = 0, cur = r.value;
+      while (guard++ < 8) {
+        const again = scheme.decode(cur, opts);
+        if (!again.ok || again.value === cur) break;
+        cur = again.value; r = { ok: true, value: cur, pairs: null, replaced: r.replaced || again.replaced };
+      }
+    }
+    return r;
+  };
+
+  let result, pairs = null, replaced = false, failed = null;
+  if (byLine) {
+    const lines = input.split('\n');
+    const outLines = [];
+    for (let i = 0; i < lines.length; i++) {
+      const r = one(lines[i]);
+      if (!r.ok) { failed = { err: r.err, line: i + 1 }; outLines.push(lines[i]); }
+      else { outLines.push(r.value); replaced = replaced || !!r.replaced; }
+    }
+    result = { ok: !failed, value: outLines.join('\n') };
+    if (failed) result.err = failed.err;
+  } else {
+    result = one(input);
+    pairs = result.pairs || null;
+    replaced = !!result.replaced;
+  }
+
+  if (!result.ok) {
+    out.textContent = '';
+    $('#out-chars').textContent = '0'; $('#out-bytes').textContent = '0'; $('#out-delta').textContent = '0%';
+    status(st, 'danger', errText(result.err));
+    renderCharmap(null, '');
+    renderLayers(input, opts.lossy);
+    return;
+  }
+
+  out.textContent = result.value;
+  const inB = countBytes(input), outB = countBytes(result.value);
+  $('#out-chars').textContent = String(Array.from(result.value).length);
+  $('#out-bytes').textContent = String(outB);
+  $('#out-delta').textContent = (inB ? (outB >= inB ? '+' : '') + Math.round((outB - inB) / inB * 100) : 0) + '%';
+
+  let kind = 'info', msg = '';
+  if (replaced) { kind = 'warn'; msg = t('codec.ok.lossy'); }
+  else if (codecDir === 'decode' && /%[0-9a-fA-F]{2}/.test(result.value)) { kind = 'warn'; msg = t('codec.double'); }
+  else if (codecDir === 'encode' && result.value === input && scheme.perChar) { kind = 'ok'; msg = t('codec.noop'); }
+  status(st, kind, msg);
+
+  if (scheme.perChar && pairs) renderCharmap(pairs);
+  else renderCharmap(null, t('codec.map.na'));
+  renderLayers(input, opts.lossy);
+}
+
+/* ======================================================================
+   5. URL inspector
+   ====================================================================== */
+const REL_BASE = 'https://relative.invalid/';
+let qParams = [];
+let inspUrl = null, inspRelative = false;
+
+function parseUrl(raw) {
+  const s = String(raw).trim();
+  if (!s) return { empty: true };
+  try { return { url: new URL(s), relative: false }; }
+  catch (e) {
+    /* Something that declares a scheme but will not parse is broken, not relative. */
+    if (/^[^\s/?#]*:/.test(s)) return { error: e.message };
+  }
+  try { return { url: new URL(s, REL_BASE), relative: true }; } catch (e) { return { error: e.message }; }
+}
+
+function splitQuery(search, plus) {
+  const q = search.replace(/^\?/, '');
+  if (!q) return [];
+  return q.split('&').map(part => {
+    const eq = part.indexOf('=');
+    const rawName = eq < 0 ? part : part.slice(0, eq);
+    const rawValue = eq < 0 ? '' : part.slice(eq + 1);
+    const dn = pctDecode(rawName, { plus: plus, lossy: true });
+    const dv = pctDecode(rawValue, { plus: plus, lossy: true });
+    return {
+      name: dn.ok ? dn.value : rawName,
+      value: dv.ok ? dv.value : rawValue,
+      rawName: rawName, rawValue: rawValue, hasEq: eq >= 0,
+      broken: !dn.ok || !dv.ok
+    };
+  });
+}
+function buildQuery(params, plus) {
+  const enc = s => pctEncode(s, plus ? SAFE.form : SAFE.component, plus);
+  return params.map(p => p.hasEq ? enc(p.name) + '=' + enc(p.value) : enc(p.name)).join('&');
+}
+function rebuiltUrl() {
+  if (!inspUrl) return '';
+  const u = new URL(inspUrl.href);
+  const q = buildQuery(qParams, $('#opt-plus').checked);
+  u.search = q ? '?' + q : '';
+  let href = u.href;
+  if (inspRelative) href = href.slice(REL_BASE.length - 1);
+  return href;
+}
+
+function looksJson(v) { const s = v.trim(); return (s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']')); }
+function looksB64(v) { return v.length >= 16 && /^[A-Za-z0-9+/_-]+={0,2}$/.test(v) && !/^\d+$/.test(v); }
+const SECRET_NAMES = /^(password|passwd|pwd|secret|token|api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|auth|authorization|session|sid|signature|sig|client[_-]?secret|private[_-]?key)$/i;
+
+function paramNotes(p, all) {
+  const notes = [];
+  if (!p.hasEq) notes.push(['note.novalue', 'chip-warn']);
+  else if (p.value === '') notes.push(['note.empty', 'chip']);
+  if (/\+/.test(p.rawValue) && !$('#opt-plus').checked) notes.push(['note.plus', 'chip-warn']);
+  if (/%[0-9a-fA-F]{2}/.test(p.value)) notes.push(['note.double', 'chip-danger']);
+  if (looksJson(p.value)) notes.push(['note.json', 'chip-violet']);
+  else if (/^[a-z][a-z0-9+.-]*:\/\//i.test(p.value)) notes.push(['note.url', 'chip-cyan']);
+  else if (/^[\w-]+\.[\w-]+\.[\w-]+$/.test(p.value)) notes.push(['note.jwt', 'chip-violet']);
+  else if (looksB64(p.value)) notes.push(['note.b64', 'chip']);
+  if (all.filter(x => x.name === p.name).length > 1) notes.push(['note.dup', 'chip-warn']);
+  return notes;
+}
+
+function renderQueryRows() {
+  const tb = $('#q-rows');
+  tb.innerHTML = '';
+  if (!qParams.length) {
+    const tr = el('tr', 'empty-row');
+    const td = el('td', null, t('insp.noparams')); td.colSpan = 6;
+    tr.appendChild(td); tb.appendChild(tr); return;
+  }
+  qParams.forEach((p, idx) => {
+    const tr = el('tr');
+    tr.draggable = true;
+    tr.dataset.idx = String(idx);
+
+    const tdH = el('td'); tdH.appendChild(el('span', 'drag-handle', '⠿')); tr.appendChild(tdH);
+
+    const tdN = el('td');
+    const inN = el('input'); inN.type = 'text'; inN.value = p.name;
+    inN.addEventListener('input', () => { p.name = inN.value; onQueryEdited(); });
+    tdN.appendChild(inN); tr.appendChild(tdN);
+
+    const tdV = el('td');
+    const inV = el('input'); inV.type = 'text'; inV.value = p.value;
+    inV.addEventListener('input', () => { p.value = inV.value; p.hasEq = true; onQueryEdited(); });
+    tdV.appendChild(inV); tr.appendChild(tdV);
+
+    const tdR = el('td', 'mono');
+    tdR.textContent = p.hasEq ? p.rawName + '=' + p.rawValue : p.rawName;
+    tdR.style.overflowWrap = 'anywhere';
+    tr.appendChild(tdR);
+
+    const tdNo = el('td');
+    paramNotes(p, qParams).forEach(([k, cls]) => {
+      const c = el('span', 'chip ' + cls, t(k)); c.style.marginRight = '4px'; tdNo.appendChild(c);
+    });
+    tr.appendChild(tdNo);
+
+    const tdX = el('td');
+    const bx = el('button', 'btn btn-icon btn-sm', '✕');
+    bx.type = 'button'; bx.title = t('btn.remove');
+    bx.addEventListener('click', () => { qParams.splice(idx, 1); onQueryEdited(true); });
+    tdX.appendChild(bx); tr.appendChild(tdX);
+
+    tr.addEventListener('dragstart', e => { tr.classList.add('dragging'); e.dataTransfer.setData('text/plain', String(idx)); });
+    tr.addEventListener('dragend', () => { tr.classList.remove('dragging'); $$('#q-rows tr').forEach(r => r.classList.remove('drop-target')); });
+    tr.addEventListener('dragover', e => { e.preventDefault(); tr.classList.add('drop-target'); });
+    tr.addEventListener('dragleave', () => tr.classList.remove('drop-target'));
+    tr.addEventListener('drop', e => {
+      e.preventDefault();
+      const from = Number(e.dataTransfer.getData('text/plain'));
+      if (Number.isNaN(from) || from === idx) return;
+      const moved = qParams.splice(from, 1)[0];
+      qParams.splice(idx, 0, moved);
+      onQueryEdited(true);
+    });
+
+    tb.appendChild(tr);
+  });
+}
+
+function onQueryEdited(rerender) {
+  if (!inspUrl) return;
+  const href = rebuiltUrl();
+  $('#insp-in').value = href;
+  runInspect({ keepParams: true });
+  if (rerender) renderQueryRows();
+}
+
+function kvRow(dl, labelKey, value, mono) {
+  const dt = el('dt', null, t(labelKey));
+  const dd = el('dd');
+  if (value === '' || value == null) { dd.className = 'void'; dd.textContent = t('insp.none'); }
+  else dd.textContent = value;
+  if (!mono) dd.style.fontFamily = 'var(--sans)';
+  dl.appendChild(dt); dl.appendChild(dd);
+}
+
+function findings(u, raw, params) {
+  const out = [];
+  const add = (level, html) => out.push({ level: level, html: html });
+
+  if (u.username || u.password) add('danger', t('f.credentials', u.username + (u.password ? ':•••' : '') + '@'));
+  if (/ /.test(raw)) add('warn', t('f.unencodedSpace'));
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(raw.trim())) add('warn', t('f.noScheme'));
+  else if (u.protocol === 'http:') add('warn', t('f.httpPlain'));
+
+  const authority = raw.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').split(/[/?#]/)[0];
+  if (/[^\x00-\x7F]/.test(authority)) {
+    add('warn', t('f.unicodeHost', safePuny(u.hostname, PUNY.toUnicode), safePuny(authority, PUNY.toASCII)));
+  }
+  if (u.hostname !== u.hostname.toLowerCase()) add('info', t('f.mixedCase'));
+
+  const defPorts = { 'http:': '80', 'https:': '443', 'ws:': '80', 'wss:': '443', 'ftp:': '21' };
+  const rawPort = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*:(\d+)/i.exec(raw);
+  if (rawPort && defPorts[u.protocol] === rawPort[1]) add('info', t('f.defaultPort', rawPort[1], u.protocol.replace(':', '')));
+
+  if (/(^|\/)\.\.?(\/|$)/.test(raw.split(/[?#]/)[0])) add('info', t('f.dotSegments', u.pathname));
+  if (/%[0-9a-fA-F]*[a-f][0-9a-fA-F]?(?=[0-9a-fA-F])|%[0-9a-fA-F][a-f]/.test(raw)) add('info', t('f.uppercaseEscape'));
+
+  if (raw.length > 2000) add('warn', t('f.longUrl', raw.length));
+  const tail = /[.,;:)\]}>'"]$/.exec(raw.trim());
+  if (tail) add('info', t('f.trailingChars', tail[0]));
+
+  const seen = {};
+  params.forEach(p => {
+    seen[p.name] = (seen[p.name] || 0) + 1;
+    if (/%[0-9a-fA-F]{2}/.test(p.value)) {
+      const again = pctDecode(p.value, { plus: false, lossy: true });
+      add('warn', t('f.doubleEncoded', p.name, again.ok ? again.value : p.value));
+    }
+    if (p.hasEq && p.value === '') add('info', t('f.emptyParam', p.name));
+    if (SECRET_NAMES.test(p.name) && p.value) add('danger', t('f.secretish', p.name));
+    if (/[?#]/.test(p.value)) add('warn', t('f.reservedRaw', /#/.test(p.value) ? '#' : '?'));
+  });
+  Object.keys(seen).forEach(k => { if (seen[k] > 1) add('warn', t('f.dupParam', k, seen[k])); });
+
+  return out;
+}
+function safePuny(host, fn) { try { return fn(host); } catch (e) { return host; } }
+
+function renderFindings(list) {
+  const box = $('#insp-findings');
+  box.innerHTML = '';
+  const rank = { danger: 0, warn: 1, info: 2 };
+  list.sort((a, b) => rank[a.level] - rank[b.level]);
+  $('#insp-finding-count').textContent = list.length ? String(list.length) : '0';
+  $('#insp-finding-count').className = 'chip ' + (list.some(f => f.level === 'danger') ? 'chip-danger' : list.some(f => f.level === 'warn') ? 'chip-warn' : 'chip-ok');
+  if (!list.length) { box.appendChild(el('p', 'hint', t('insp.clean'))); return; }
+  list.forEach(f => {
+    const row = el('div', 'finding');
+    const dot = el('span', 'dot');
+    dot.style.background = f.level === 'danger' ? 'var(--danger)' : f.level === 'warn' ? 'var(--warn)' : 'var(--accent)';
+    const body = el('div'); setNode(body, f.html);
+    row.appendChild(dot); row.appendChild(body);
+    box.appendChild(row);
+  });
+}
+
+function runInspect(o) {
+  o = o || {};
+  const raw = $('#insp-in').value;
+  const st = $('#insp-status');
+  const parts = $('#insp-parts');
+  parts.innerHTML = '';
+  const r = parseUrl(raw);
+
+  if (r.empty) {
+    inspUrl = null; qParams = [];
+    status(st, 'info', ''); parts.appendChild(el('p', 'hint', t('insp.empty')));
+    renderQueryRows(); $('#seg-rows').innerHTML = ''; renderFindings([]); runCompare();
+    return;
+  }
+  if (r.error) {
+    inspUrl = null; qParams = [];
+    status(st, 'danger', t('insp.invalid', r.error));
+    renderQueryRows(); $('#seg-rows').innerHTML = ''; renderFindings([]); runCompare();
+    return;
+  }
+
+  inspUrl = r.url; inspRelative = r.relative;
+  if (!o.keepParams) qParams = splitQuery(inspUrl.search, $('#opt-plus').checked);
+
+  status(st, inspRelative ? 'warn' : 'info', inspRelative ? t('insp.relative', REL_BASE) : '');
+
+  const u = inspUrl;
+  kvRow(parts, 'insp.part.scheme', inspRelative ? '' : u.protocol.replace(':', ''), true);
+  kvRow(parts, 'insp.part.user', u.username ? u.username + (u.password ? ':•••' : '') : '', true);
+  kvRow(parts, 'insp.part.host', inspRelative ? '' : u.hostname, true);
+  const uni = safePuny(u.hostname, PUNY.toUnicode);
+  if (!inspRelative && uni !== u.hostname) kvRow(parts, 'insp.part.hostUnicode', uni, true);
+  kvRow(parts, 'insp.part.port', inspRelative ? '' : (u.port || t('insp.default')), true);
+  kvRow(parts, 'insp.part.path', u.pathname, true);
+  kvRow(parts, 'insp.part.query', u.search.replace(/^\?/, ''), true);
+  kvRow(parts, 'insp.part.fragment', u.hash.replace(/^#/, ''), true);
+  if (!inspRelative) kvRow(parts, 'insp.part.origin', u.origin === 'null' ? '' : u.origin, true);
+  kvRow(parts, 'insp.part.length', raw.trim().length + ' ch · ' + countBytes(raw.trim()) + ' B', false);
+  kvRow(parts, 'insp.part.params', String(qParams.length), false);
+
+  renderQueryRows();
+
+  const segTb = $('#seg-rows');
+  segTb.innerHTML = '';
+  const segs = u.pathname.split('/').filter(s => s !== '');
+  if (!segs.length) {
+    const tr = el('tr', 'empty-row'); const td = el('td', null, t('insp.nosegments')); td.colSpan = 3;
+    tr.appendChild(td); segTb.appendChild(tr);
+  } else segs.forEach((s, i) => {
+    const tr = el('tr');
+    tr.appendChild(el('td', 'mono', String(i + 1)));
+    tr.appendChild(el('td', 'mono', s));
+    const d = pctDecode(s, { plus: false, lossy: true });
+    tr.appendChild(el('td', 'mono', d.ok ? d.value : s));
+    segTb.appendChild(tr);
+  });
+
+  renderFindings(findings(u, raw, qParams));
+  runCompare();
+}
+
+function normalizeHref(raw) {
+  const r = parseUrl(raw);
+  if (r.empty || r.error) return raw;
+  const u = r.url;
+  let host = u.hostname.toLowerCase();
+  try { host = PUNY.toASCII(host); } catch (e) {}
+  const defPorts = { 'http:': '80', 'https:': '443', 'ws:': '80', 'wss:': '443', 'ftp:': '21' };
+  const port = (u.port && u.port !== defPorts[u.protocol]) ? ':' + u.port : '';
+  const path = u.pathname
+    .replace(/%[0-9a-f]{2}/g, m => m.toUpperCase())
+    .replace(/%(2D|2E|5F|7E|3[0-9]|4[1-9A-F]|5[0-9A]|6[1-9A-F]|7[0-9A])/g, m => {
+      const ch = String.fromCharCode(parseInt(m.slice(1), 16));
+      return SAFE.unreserved(ch.charCodeAt(0)) ? ch : m;
+    }) || '/';
+  const q = buildQuery(splitQuery(u.search, false), false);
+  const frag = u.hash ? u.hash : '';
+  if (r.relative) return path + (q ? '?' + q : '') + frag;
+  return u.protocol + '//' + (u.username ? u.username + (u.password ? ':' + u.password : '') + '@' : '') +
+         host + port + path + (q ? '?' + q : '') + frag;
+}
+
+function runCompare() {
+  const box = $('#cmp-out');
+  box.innerHTML = '';
+  const a = $('#insp-in').value.trim(), b = $('#cmp-in').value.trim();
+  if (!a || !b) return;
+  const ra = parseUrl(a), rb = parseUrl(b);
+  if (ra.error || rb.error || ra.empty || rb.empty) { status(box, 'danger', t('insp.invalid', '')); return; }
+  const na = normalizeHref(a), nb = normalizeHref(b);
+  const diffs = [];
+  const fields = [['insp.part.scheme', u => u.protocol], ['insp.part.host', u => u.hostname],
+                  ['insp.part.port', u => u.port], ['insp.part.path', u => u.pathname],
+                  ['insp.part.fragment', u => u.hash]];
+  fields.forEach(([k, f]) => {
+    const va = f(ra.url), vb = f(rb.url);
+    if (va !== vb) diffs.push(t(k) + ': ' + (va || '—') + '  ≠  ' + (vb || '—'));
+  });
+  const pa = splitQuery(ra.url.search, false), pb = splitQuery(rb.url.search, false);
+  const mapA = {}, mapB = {};
+  pa.forEach(p => mapA[p.name] = p.value); pb.forEach(p => mapB[p.name] = p.value);
+  Object.keys(mapA).forEach(k => {
+    if (!(k in mapB)) diffs.push(k + ': ' + t('insp.cmp.paramOnly', t('insp.left')));
+    else if (mapA[k] !== mapB[k]) diffs.push(k + ': ' + mapA[k] + '  ≠  ' + mapB[k]);
+  });
+  Object.keys(mapB).forEach(k => { if (!(k in mapA)) diffs.push(k + ': ' + t('insp.cmp.paramOnly', t('insp.right'))); });
+
+  if (!diffs.length && na === nb) { status(box, 'ok', t('insp.cmp.same')); return; }
+  status(box, diffs.length ? 'warn' : 'ok', t('insp.cmp.diff', diffs.length));
+  const ul = el('div', 'findings');
+  ul.style.marginTop = '8px';
+  diffs.forEach(d => {
+    const row = el('div', 'finding');
+    const dot = el('span', 'dot'); dot.style.background = 'var(--warn)';
+    row.appendChild(dot); row.appendChild(el('div', 'mono', d));
+    ul.appendChild(row);
+  });
+  box.appendChild(ul);
+}
+
+/* ======================================================================
+   6. Batch
+   ====================================================================== */
+const BATCH_OPS = [
+  ['encComponent', s => pctEncode(s, SAFE.component, false)],
+  ['decComponent', s => { const r = pctDecode(s, { plus: false, lossy: true }); if (!r.ok) throw new Error(errText(r.err)); return r.value; }],
+  ['encForm', s => pctEncode(s, SAFE.form, true)],
+  ['decForm', s => { const r = pctDecode(s, { plus: true, lossy: true }); if (!r.ok) throw new Error(errText(r.err)); return r.value; }],
+  ['encB64u', s => bytesToB64(TE.encode(s), true)],
+  ['decB64u', s => { const r = bytesToText(b64ToBytes(s), { lossy: true }); if (!r.ok) throw new Error(errText(r.err)); return r.value; }],
+  ['deepDecode', s => { const l = peelLayers(s, true); return l[l.length - 1]; }],
+  ['normalize', s => normalizeHref(s)],
+  ['host', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); return r.url.hostname; }],
+  ['origin', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); return r.url.origin; }],
+  ['path', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); return r.url.pathname; }],
+  ['strip', s => { const r = parseUrl(s); if (r.error || r.empty) throw new Error('url'); const u = r.url; u.search = ''; u.hash = ''; return u.href; }],
+  ['qjson', s => {
+    const q = s.indexOf('?') >= 0 ? s.slice(s.indexOf('?') + 1) : s;
+    const o = {};
+    splitQuery(q.split('#')[0], true).forEach(p => {
+      if (p.name in o) { if (Array.isArray(o[p.name])) o[p.name].push(p.value); else o[p.name] = [o[p.name], p.value]; }
+      else o[p.name] = p.value;
+    });
+    return JSON.stringify(o);
+  }],
+  ['slug', s => slugify(s)],
+  ['puny', s => { const r = parseUrl(s); const host = (r.url && !r.empty && !r.error) ? r.url.hostname : s.trim(); return PUNY.toASCII(host); }],
+  ['lower', s => s.toLowerCase()]
+];
+
+function slugify(s) {
+  const MAP = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'İ': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'ß': 'ss', 'æ': 'ae', 'ø': 'o', 'å': 'a', 'đ': 'd', 'ł': 'l' };
+  return String(s).toLowerCase()
+    .replace(/[çğıİöşüßæøåđł]/g, c => MAP[c] || c)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 96);
+}
+
+function buildBatchOps() {
+  const sel = $('#batch-op');
+  const cur = sel.value;
+  sel.innerHTML = '';
+  BATCH_OPS.forEach(([id]) => {
+    const o = el('option', null, t('op.' + id)); o.value = id; sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+let batchResult = [];
+function runBatch() {
+  const raw = $('#batch-in').value;
+  const st = $('#batch-status');
+  let lines = raw.split('\n');
+  if ($('#batch-skipblank').checked) lines = lines.filter(l => l.trim() !== '');
+  $('#batch-in-n').textContent = String(lines.length);
+  if (!lines.length) { status(st, 'info', t('batch.empty')); $('#batch-out').textContent = ''; return; }
+
+  const op = BATCH_OPS.find(o => o[0] === $('#batch-op').value) || BATCH_OPS[0];
+  let fail = 0;
+  let rows = lines.map(line => {
+    try { return { in: line, out: op[1](line.trim()), ok: true }; }
+    catch (e) { fail++; return { in: line, out: '', ok: false, error: e.message }; }
+  });
+  if ($('#batch-dedupe').checked) {
+    const seen = new Set();
+    rows = rows.filter(r => { const k = r.out; if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+  if ($('#batch-sort').checked) rows.sort((a, b) => a.out.localeCompare(b.out));
+
+  batchResult = rows;
+  $('#batch-out').textContent = rows.map(r => r.ok ? r.out : '⚠ ' + r.error).join('\n');
+  $('#batch-out-n').textContent = String(rows.length);
+  $('#batch-fail').textContent = String(fail);
+  status(st, fail ? 'warn' : 'ok', t('batch.done', lines.length, fail));
+}
+
+function downloadBatch() {
+  if (!batchResult.length) { toast(t('batch.empty')); return; }
+  const fmt = $('#batch-format').value;
+  let body, mime, name;
+  if (fmt === 'json') {
+    body = JSON.stringify(batchResult.map(r => ({ input: r.in, output: r.ok ? r.out : null, error: r.ok ? null : r.error })), null, 2);
+    mime = 'application/json'; name = 'urlforge.json';
+  } else if (fmt === 'csv') {
+    const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+    body = 'input,output,error\n' + batchResult.map(r => [q(r.in), q(r.ok ? r.out : ''), q(r.ok ? '' : r.error)].join(',')).join('\n');
+    mime = 'text/csv'; name = 'urlforge.csv';
+  } else {
+    body = batchResult.map(r => r.ok ? r.out : '').join('\n');
+    mime = 'text/plain'; name = 'urlforge.txt';
+  }
+  const blob = new Blob([body], { type: mime + ';charset=utf-8' });
+  const a = el('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast(t('batch.dl', name));
+}
+
+/* ======================================================================
+   7. Request forge
+   ====================================================================== */
+let reqHeaders = [{ name: 'Accept', value: 'application/json' }];
+
+function renderHeaderRows() {
+  const tb = $('#h-rows');
+  tb.innerHTML = '';
+  if (!reqHeaders.length) {
+    const tr = el('tr', 'empty-row'); const td = el('td', null, '—'); td.colSpan = 3;
+    tr.appendChild(td); tb.appendChild(tr); return;
+  }
+  reqHeaders.forEach((h, i) => {
+    const tr = el('tr');
+    const tdN = el('td'); tdN.style.width = '36%';
+    const inN = el('input'); inN.type = 'text'; inN.value = h.name; inN.placeholder = t('req.hName');
+    inN.addEventListener('input', () => { h.name = inN.value; renderSnippet(); });
+    tdN.appendChild(inN); tr.appendChild(tdN);
+
+    const tdV = el('td');
+    const inV = el('input'); inV.type = 'text'; inV.value = h.value; inV.placeholder = t('req.hValue');
+    inV.addEventListener('input', () => { h.value = inV.value; renderSnippet(); });
+    tdV.appendChild(inV); tr.appendChild(tdV);
+
+    const tdX = el('td'); tdX.style.width = '34px';
+    const bx = el('button', 'btn btn-icon btn-sm', '✕'); bx.type = 'button'; bx.title = t('btn.remove');
+    bx.addEventListener('click', () => { reqHeaders.splice(i, 1); renderHeaderRows(); renderSnippet(); });
+    tdX.appendChild(bx); tr.appendChild(tdX);
+    tb.appendChild(tr);
+  });
+}
+
+function tokenizeCurl(src) {
+  const s = String(src).replace(/\\\r?\n/g, ' ').replace(/\^\r?\n/g, ' ').replace(/`\r?\n/g, ' ');
+  const out = [];
+  let i = 0;
+  while (i < s.length) {
+    if (/\s/.test(s[i])) { i++; continue; }
+    let tok = '';
+    while (i < s.length && !/\s/.test(s[i])) {
+      const ch = s[i];
+      if (ch === "'") { i++; while (i < s.length && s[i] !== "'") tok += s[i++]; i++; }
+      else if (ch === '"') {
+        i++;
+        while (i < s.length && s[i] !== '"') {
+          if (s[i] === '\\' && i + 1 < s.length) { tok += s[i + 1]; i += 2; }
+          else tok += s[i++];
+        }
+        i++;
+      }
+      else if (ch === '\\') { tok += s[i + 1] || ''; i += 2; }
+      else { tok += ch; i++; }
+    }
+    out.push(tok);
+  }
+  return out;
+}
+
+function importCurl() {
+  const src = $('#curl-in').value.trim();
+  const st = $('#req-status');
+  if (!src) { status(st, 'info', t('req.curlEmpty')); return; }
+  const tk = tokenizeCurl(src);
+  if (!/^curl(\.exe)?$/i.test(tk[0] || '')) { status(st, 'danger', t('req.curlNotCurl')); return; }
+
+  let method = '', url = '', body = '', bodyType = 'none';
+  const headers = [];
+  const formParts = [];
+  for (let i = 1; i < tk.length; i++) {
+    const a = tk[i];
+    const next = () => tk[++i] || '';
+    if (a === '-X' || a === '--request') method = next().toUpperCase();
+    else if (a === '-H' || a === '--header') {
+      const h = next(); const c = h.indexOf(':');
+      if (c > 0) headers.push({ name: h.slice(0, c).trim(), value: h.slice(c + 1).trim() });
+    }
+    else if (a === '-A' || a === '--user-agent') headers.push({ name: 'User-Agent', value: next() });
+    else if (a === '-e' || a === '--referer') headers.push({ name: 'Referer', value: next() });
+    else if (a === '-b' || a === '--cookie') headers.push({ name: 'Cookie', value: next() });
+    else if (a === '-u' || a === '--user') headers.push({ name: 'Authorization', value: 'Basic ' + bytesToB64(TE.encode(next()), false) });
+    else if (a === '-d' || a === '--data' || a === '--data-raw' || a === '--data-binary' || a === '--data-ascii') { body += (body ? '&' : '') + next(); }
+    else if (a === '--data-urlencode') {
+      const v = next(); const eq = v.indexOf('=');
+      formParts.push(eq < 0 ? pctEncode(v, SAFE.form, true) : pctEncode(v.slice(0, eq), SAFE.form, true) + '=' + pctEncode(v.slice(eq + 1), SAFE.form, true));
+    }
+    else if (a === '-F' || a === '--form') { formParts.push(next()); bodyType = 'raw'; }
+    else if (a === '--url') url = next();
+    else if (a === '-G' || a === '--get') method = 'GET';
+    else if (a === '-I' || a === '--head') method = 'HEAD';
+    else if (a.startsWith('-')) { if (/^(-o|--output|-w|--write-out|--connect-timeout|-m|--max-time|--retry|--resolve|-x|--proxy|--cert|--key|--cacert)$/.test(a)) i++; }
+    else if (!url) url = a;
+  }
+  if (formParts.length && !body) body = formParts.join('&');
+
+  const ct = headers.find(h => /^content-type$/i.test(h.name));
+  if (body) {
+    if (ct && /json/i.test(ct.value)) bodyType = 'json';
+    else if (ct && /x-www-form-urlencoded/i.test(ct.value)) bodyType = 'form';
+    else if (/^\s*[{[]/.test(body)) bodyType = 'json';
+    else bodyType = bodyType === 'raw' ? 'raw' : 'form';
+  }
+  if (!method) method = body ? 'POST' : 'GET';
+
+  $('#req-method').value = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(method) ? method : 'GET';
+  $('#req-url').value = url;
+  reqHeaders = headers;
+  $('#req-body-type').value = bodyType;
+  $('#req-body').value = body;
+  renderHeaderRows(); renderSnippet();
+  status(st, 'ok', t('req.imported', headers.length, body ? t('req.withBody') : ''));
+}
+
+const shq = s => "'" + String(s).replace(/'/g, "'\\''") + "'";
+const psq = s => "'" + String(s).replace(/'/g, "''") + "'";
+const phpq = s => "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+const jsq = s => JSON.stringify(String(s));
+
+function reqModel() {
+  const bodyType = $('#req-body-type').value;
+  const body = bodyType === 'none' ? '' : $('#req-body').value;
+  const headers = reqHeaders.filter(h => h.name.trim());
+  if (body && !headers.some(h => /^content-type$/i.test(h.name))) {
+    if (bodyType === 'json') headers.push({ name: 'Content-Type', value: 'application/json' });
+    else if (bodyType === 'form') headers.push({ name: 'Content-Type', value: 'application/x-www-form-urlencoded' });
+  }
+  return { method: $('#req-method').value, url: $('#req-url').value.trim(), headers: headers, body: body, bodyType: bodyType };
+}
+
+function snippet(m, lang) {
+  const H = m.headers;
+  if (lang === 'curl') {
+    const parts = ['curl -X ' + m.method + ' ' + shq(m.url)];
+    H.forEach(h => parts.push('  -H ' + shq(h.name + ': ' + h.value)));
+    if (m.body) parts.push('  -d ' + shq(m.body));
+    return parts.join(' \\\n');
+  }
+  if (lang === 'httpie') {
+    const parts = ['http ' + m.method + ' ' + shq(m.url)];
+    H.forEach(h => parts.push('  ' + shq(h.name + ':' + h.value)));
+    if (m.body) parts.push('  <<< ' + shq(m.body));
+    return parts.join(' \\\n');
+  }
+  if (lang === 'fetch') {
+    const o = ['  method: ' + jsq(m.method)];
+    if (H.length) o.push('  headers: {\n' + H.map(h => '    ' + jsq(h.name) + ': ' + jsq(h.value)).join(',\n') + '\n  }');
+    if (m.body) o.push('  body: ' + jsq(m.body));
+    return 'const response = await fetch(' + jsq(m.url) + ', {\n' + o.join(',\n') + '\n});\n\nconst data = await response.json();';
+  }
+  if (lang === 'axios') {
+    const o = ['  method: ' + jsq(m.method.toLowerCase()), '  url: ' + jsq(m.url)];
+    if (H.length) o.push('  headers: {\n' + H.map(h => '    ' + jsq(h.name) + ': ' + jsq(h.value)).join(',\n') + '\n  }');
+    if (m.body) o.push('  data: ' + (m.bodyType === 'json' ? safeJsonLiteral(m.body) : jsq(m.body)));
+    return "import axios from 'axios';\n\nconst { data } = await axios({\n" + o.join(',\n') + '\n});';
+  }
+  if (lang === 'python') {
+    const lines = ['import requests', ''];
+    if (H.length) lines.push('headers = {\n' + H.map(h => '    ' + jsq(h.name) + ': ' + jsq(h.value)).join(',\n') + '\n}');
+    if (m.body) lines.push(m.bodyType === 'json' ? 'payload = ' + safeJsonLiteral(m.body) : 'payload = ' + jsq(m.body));
+    const args = [jsq(m.url)];
+    if (H.length) args.push('headers=headers');
+    if (m.body) args.push(m.bodyType === 'json' ? 'json=payload' : 'data=payload');
+    lines.push('', 'response = requests.' + m.method.toLowerCase() + '(' + args.join(', ') + ')', 'response.raise_for_status()', 'print(response.json())');
+    return lines.join('\n');
+  }
+  if (lang === 'go') {
+    const lines = ['package main', '', 'import (', '\t"fmt"', '\t"io"', '\t"net/http"'];
+    if (m.body) lines.push('\t"strings"');
+    lines.push(')', '', 'func main() {');
+    lines.push(m.body
+      ? '\treq, err := http.NewRequest(' + jsq(m.method) + ', ' + jsq(m.url) + ', strings.NewReader(' + jsq(m.body) + '))'
+      : '\treq, err := http.NewRequest(' + jsq(m.method) + ', ' + jsq(m.url) + ', nil)');
+    lines.push('\tif err != nil {', '\t\tpanic(err)', '\t}');
+    H.forEach(h => lines.push('\treq.Header.Set(' + jsq(h.name) + ', ' + jsq(h.value) + ')'));
+    lines.push('', '\tresp, err := http.DefaultClient.Do(req)', '\tif err != nil {', '\t\tpanic(err)', '\t}',
+               '\tdefer resp.Body.Close()', '', '\tbody, _ := io.ReadAll(resp.Body)', '\tfmt.Println(resp.Status, string(body))', '}');
+    return lines.join('\n');
+  }
+  if (lang === 'powershell') {
+    const lines = [];
+    if (H.length) lines.push('$headers = @{\n' + H.map(h => '  ' + psq(h.name) + ' = ' + psq(h.value)).join('\n') + '\n}');
+    if (m.body) lines.push('$body = ' + psq(m.body));
+    const args = ['-Uri ' + psq(m.url), '-Method ' + m.method];
+    if (H.length) args.push('-Headers $headers');
+    if (m.body) args.push('-Body $body');
+    lines.push('$response = Invoke-RestMethod ' + args.join(' '), '$response | ConvertTo-Json -Depth 8');
+    return lines.join('\n');
+  }
+  if (lang === 'php') {
+    const lines = ['<?php', '$ch = curl_init(' + phpq(m.url) + ');',
+      'curl_setopt($ch, CURLOPT_CUSTOMREQUEST, ' + phpq(m.method) + ');',
+      'curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);'];
+    if (H.length) lines.push('curl_setopt($ch, CURLOPT_HTTPHEADER, [\n' + H.map(h => '    ' + phpq(h.name + ': ' + h.value)).join(',\n') + '\n]);');
+    if (m.body) lines.push('curl_setopt($ch, CURLOPT_POSTFIELDS, ' + phpq(m.body) + ');');
+    lines.push('', '$response = curl_exec($ch);', 'curl_close($ch);', 'echo $response;');
+    return lines.join('\n');
+  }
+  return '';
+}
+function safeJsonLiteral(s) { try { return JSON.stringify(JSON.parse(s), null, 2).replace(/\n/g, '\n'); } catch (e) { return jsq(s); } }
+
+function highlightSnippet(text) {
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return esc
+    .replace(/(["'])(?:(?!\1)[^\\\n]|\\.)*\1/g, m => '<span class="s-str">' + m + '</span>')
+    .replace(/^(curl|http|const|import|package|func|echo|\$response|\$ch|\$headers|\$body)\b/gm, '<span class="s-cmd">$1</span>');
+}
+
+function renderSnippet() {
+  const m = reqModel();
+  const box = $('#req-snippet');
+  if (!m.url) { box.textContent = ''; box.appendChild(el('span', 's-com', t('req.noUrl'))); return; }
+  box.innerHTML = highlightSnippet(snippet(m, $('#req-lang').value));
+}
+
+/* ---- OAuth 2.0 ---- */
+const HAS_CRYPTO = !!(window.crypto && window.crypto.subtle);
+function randomBytes(n) {
+  const b = new Uint8Array(n);
+  (window.crypto || {}).getRandomValues ? crypto.getRandomValues(b) : b.forEach((_, i) => b[i] = Math.floor(Math.random() * 256));
+  return b;
+}
+function buildOAuthUrl() {
+  const base = $('#oa-endpoint').value.trim();
+  const pairs = [
+    ['response_type', $('#oa-response').value.trim()],
+    ['client_id', $('#oa-client').value.trim()],
+    ['redirect_uri', $('#oa-redirect').value.trim()],
+    ['scope', $('#oa-scope').value.trim()],
+    ['state', $('#oa-state').value.trim()],
+    ['code_challenge', $('#oa-challenge').value.trim()],
+    ['code_challenge_method', $('#oa-challenge').value.trim() ? 'S256' : '']
+  ].filter(p => p[1]);
+  const q = pairs.map(([k, v]) => pctEncode(k, SAFE.component, false) + '=' + pctEncode(v, SAFE.component, false)).join('&');
+  const out = base ? base + (base.includes('?') ? '&' : '?') + q : '';
+  $('#oa-out').textContent = out;
+  return out;
+}
+async function makePkce() {
+  if (!HAS_CRYPTO) { status($('#cb-out'), 'warn', t('oauth.noCrypto')); return; }
+  const verifier = bytesToB64(randomBytes(32), true);
+  $('#oa-verifier').value = verifier;
+  const digest = await crypto.subtle.digest('SHA-256', TE.encode(verifier));
+  $('#oa-challenge').value = bytesToB64(new Uint8Array(digest), true);
+  if (!$('#oa-state').value) $('#oa-state').value = bytesToB64(randomBytes(12), true);
+  buildOAuthUrl();
+}
+function readCallback() {
+  const box = $('#cb-out');
+  const raw = $('#cb-in').value.trim();
+  box.innerHTML = '';
+  if (!raw) { status(box, 'info', t('oauth.cbEmpty')); return; }
+  const r = parseUrl(raw);
+  if (r.error || r.empty) { status(box, 'danger', t('insp.invalid', r.error || '')); return; }
+  const u = r.url;
+  const params = splitQuery(u.search, true).concat(splitQuery(u.hash.replace(/^#/, ''), true));
+  const get = k => { const p = params.find(x => x.name === k); return p ? p.value : ''; };
+
+  const err = get('error');
+  if (err) {
+    const d = get('error_description');
+    status(box, 'danger', t('oauth.cbError', err, d ? ' — ' + d : ''));
+  } else if (get('code')) {
+    status(box, 'ok', t('oauth.cbCode'));
+  } else if (get('access_token') || get('id_token')) {
+    status(box, 'warn', t('oauth.cbImplicit'));
+  } else {
+    status(box, 'info', t('oauth.cbNothing'));
+  }
+  if (params.length) {
+    const dl = el('dl', 'kv');
+    dl.style.marginTop = '10px';
+    params.forEach(p => {
+      dl.appendChild(el('dt', null, p.name));
+      const dd = el('dd', null, p.value.length > 120 ? p.value.slice(0, 120) + ' …' : p.value);
+      dl.appendChild(dd);
+    });
+    box.appendChild(dl);
+  }
+}
+
+/* ======================================================================
+   8. Convert
+   ====================================================================== */
+let cvGuard = false;
+function cvSync(source) {
+  if (cvGuard) return;
+  cvGuard = true;
+  const st = $('#cv-bytes-status');
+  try {
+    let bytes;
+    if (source === 'text') bytes = TE.encode($('#cv-text').value);
+    else if (source === 'b64') bytes = b64ToBytes($('#cv-b64').value);
+    else if (source === 'b64u') bytes = b64ToBytes($('#cv-b64u').value);
+    else bytes = hexToBytes($('#cv-hex').value);
+
+    const txt = bytesToText(bytes, { lossy: true });
+    if (source !== 'text') $('#cv-text').value = txt.value;
+    if (source !== 'b64') $('#cv-b64').value = bytesToB64(bytes, false);
+    if (source !== 'b64u') $('#cv-b64u').value = bytesToB64(bytes, true);
+    if (source !== 'hex') $('#cv-hex').value = bytesToHexStr(bytes, '');
+    $('#cv-bytes-len').textContent = bytes.length + ' B';
+    status(st, txt.replaced ? 'warn' : 'ok', txt.replaced ? t('codec.ok.lossy') : '');
+  } catch (e) {
+    status(st, 'danger', e.message === 'hexlen' ? t('codec.err.hexlen') : e.message === 'hexchar' ? t('codec.err.hexchar', e.ch || '?') : t('codec.err.b64'));
+  }
+  cvGuard = false;
+}
+
+function cvQuery(source) {
+  if (cvGuard) return;
+  cvGuard = true;
+  const st = $('#cv-q-status');
+  const plus = $('#cv-q-plus').checked;
+  try {
+    if (source === 'qs') {
+      const params = splitQuery($('#cv-qs').value.replace(/^[^?]*\?/, ''), plus);
+      const o = {};
+      params.forEach(p => {
+        if (p.name in o) { if (Array.isArray(o[p.name])) o[p.name].push(p.value); else o[p.name] = [o[p.name], p.value]; }
+        else o[p.name] = p.value;
+      });
+      $('#cv-json').value = JSON.stringify(o, null, 2);
+      status(st, 'ok', '');
+    } else {
+      const v = $('#cv-json').value.trim();
+      if (!v) { $('#cv-qs').value = ''; status(st, 'info', ''); cvGuard = false; return; }
+      const o = JSON.parse(v);
+      const parts = [];
+      const enc = s => pctEncode(String(s), plus ? SAFE.form : SAFE.component, plus);
+      Object.keys(o).forEach(k => {
+        const val = o[k];
+        if (Array.isArray(val)) val.forEach(x => parts.push(enc(k) + '=' + enc(x)));
+        else if (val && typeof val === 'object') parts.push(enc(k) + '=' + enc(JSON.stringify(val)));
+        else parts.push(enc(k) + '=' + enc(val == null ? '' : val));
+      });
+      $('#cv-qs').value = parts.join('&');
+      status(st, 'ok', '');
+    }
+  } catch (e) { status(st, 'danger', e.message); }
+  cvGuard = false;
+}
+
+function cvTime(source) {
+  if (cvGuard) return;
+  cvGuard = true;
+  const st = $('#cv-time-status');
+  let d = null;
+  try {
+    if (source === 'epoch') { const n = Number($('#cv-epoch').value.trim()); if (Number.isFinite(n)) d = new Date(n * 1000); }
+    else if (source === 'epochms') { const n = Number($('#cv-epochms').value.trim()); if (Number.isFinite(n)) d = new Date(n); }
+    else if (source === 'iso') { const v = $('#cv-iso').value.trim(); if (v) d = new Date(v); }
+    else d = new Date();
+    if (!d || isNaN(d.getTime())) throw new Error('bad');
+    if (source !== 'epoch') $('#cv-epoch').value = String(Math.floor(d.getTime() / 1000));
+    if (source !== 'epochms') $('#cv-epochms').value = String(d.getTime());
+    if (source !== 'iso') $('#cv-iso').value = d.toISOString();
+    $('#cv-local').value = d.toLocaleString(LANG === 'tr' ? 'tr-TR' : 'en-GB', { dateStyle: 'full', timeStyle: 'long' });
+    status(st, 'ok', '');
+  } catch (e) {
+    $('#cv-local').value = '';
+    status(st, 'danger', t('cv.badTime'));
+  }
+  cvGuard = false;
+}
+
+let hashSeq = 0;
+async function cvHash() {
+  const st = $('#cv-hash-status');
+  const out = $('#cv-hash-out-val');
+  const msg = $('#cv-hash-in').value;
+  const key = $('#cv-hmac-key').value;
+  if (!msg && !key) { out.textContent = ''; status(st, 'info', ''); return; }
+  if (!HAS_CRYPTO) { out.textContent = ''; status(st, 'warn', t('cv.noCrypto')); return; }
+  const seq = ++hashSeq;
+  try {
+    const alg = $('#cv-alg').value;
+    let digest;
+    if (key) {
+      const k = await crypto.subtle.importKey('raw', TE.encode(key), { name: 'HMAC', hash: alg }, false, ['sign']);
+      digest = await crypto.subtle.sign('HMAC', k, TE.encode(msg));
+    } else {
+      digest = await crypto.subtle.digest(alg, TE.encode(msg));
+    }
+    if (seq !== hashSeq) return;
+    const b = new Uint8Array(digest);
+    const fmt = $('#cv-hash-out').value;
+    out.textContent = fmt === 'hex' ? bytesToHexStr(b, '') : bytesToB64(b, fmt === 'b64u');
+    status(st, 'ok', '');
+  } catch (e) {
+    if (seq !== hashSeq) return;
+    out.textContent = ''; status(st, 'danger', e.message);
+  }
+}
+
+function cvGenerate() {
+  const dl = $('#cv-gen');
+  dl.innerHTML = '';
+  const uuid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (function () {
+    const b = randomBytes(16);
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const h = bytesToHexStr(b, '');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+  })();
+  const rows = [
+    ['cv.uuid', uuid],
+    ['cv.hex32', bytesToHexStr(randomBytes(32), '')],
+    ['cv.b64u32', bytesToB64(randomBytes(32), true)],
+    ['cv.nonce', bytesToB64(randomBytes(12), true).slice(0, 16)]
+  ];
+  rows.forEach(([k, v]) => {
+    dl.appendChild(el('dt', null, t(k)));
+    const dd = el('dd');
+    dd.style.display = 'flex'; dd.style.gap = '8px'; dd.style.alignItems = 'center';
+    const span = el('span', null, v); span.style.overflowWrap = 'anywhere';
+    const b = el('button', 'btn btn-sm', t('btn.copy')); b.type = 'button'; b.style.flex = 'none';
+    b.addEventListener('click', () => copy(v));
+    dd.appendChild(span); dd.appendChild(b);
+    dl.appendChild(dd);
+  });
+}
+
+function cvJwt() {
+  const out = $('#cv-jwt-out');
+  const v = $('#cv-jwt').value.trim().replace(/^Bearer\s+/i, '').replace(/\s+/g, '');
+  if (!v) { out.textContent = ''; return; }
+  const parts = v.split('.');
+  if (parts.length === 5) { out.textContent = t('cv.jwt.jwe'); return; }
+  if (parts.length !== 3) { out.textContent = t('cv.jwt.shape', parts.length); return; }
+  try {
+    const dec = p => JSON.parse(bytesToText(b64ToBytes(p), { lossy: true }).value);
+    const header = dec(parts[0]), payload = dec(parts[1]);
+    const lines = ['// header', JSON.stringify(header, null, 2), '', '// payload', JSON.stringify(payload, null, 2)];
+    ['iat', 'nbf', 'exp'].forEach(k => {
+      if (typeof payload[k] === 'number') lines.push('// ' + k + ' → ' + new Date(payload[k] * 1000).toISOString());
+    });
+    out.textContent = lines.join('\n');
+  } catch (e) { out.textContent = t('cv.jwt.bad', e.message); }
+}
+
+/* ======================================================================
+   9. Reference
+   ====================================================================== */
+const CHAR_NAMES = {
+  32: 'space', 33: 'exclamation mark', 34: 'quotation mark', 35: 'number sign', 36: 'dollar sign',
+  37: 'percent sign', 38: 'ampersand', 39: 'apostrophe', 40: 'left parenthesis', 41: 'right parenthesis',
+  42: 'asterisk', 43: 'plus sign', 44: 'comma', 45: 'hyphen-minus', 46: 'full stop', 47: 'solidus',
+  58: 'colon', 59: 'semicolon', 60: 'less-than sign', 61: 'equals sign', 62: 'greater-than sign',
+  63: 'question mark', 64: 'commercial at', 91: 'left square bracket', 92: 'reverse solidus',
+  93: 'right square bracket', 94: 'circumflex accent', 95: 'low line', 96: 'grave accent',
+  123: 'left curly bracket', 124: 'vertical line', 125: 'right curly bracket', 126: 'tilde', 127: 'delete'
+};
+const CHAR_NAMES_TR = {
+  32: 'boşluk', 33: 'ünlem', 34: 'çift tırnak', 35: 'diyez', 36: 'dolar',
+  37: 'yüzde', 38: 've işareti', 39: 'kesme', 40: 'sol parantez', 41: 'sağ parantez',
+  42: 'yıldız', 43: 'artı', 44: 'virgül', 45: 'tire', 46: 'nokta', 47: 'eğik çizgi',
+  58: 'iki nokta', 59: 'noktalı virgül', 60: 'küçüktür', 61: 'eşittir', 62: 'büyüktür',
+  63: 'soru işareti', 64: 'at', 91: 'sol köşeli parantez', 92: 'ters eğik çizgi',
+  93: 'sağ köşeli parantez', 94: 'şapka', 95: 'alt çizgi', 96: 'ters kesme',
+  123: 'sol küme parantezi', 124: 'düşey çizgi', 125: 'sağ küme parantezi', 126: 'tilde', 127: 'sil'
+};
+const GEN_DELIMS = setOf(":/?#[]@");
+const EXTRA_CHARS = ['ç', 'ğ', 'ı', 'ö', 'ş', 'ü', 'é', 'ñ', '日', '€', '😀'];
+
+function charClass(cp) {
+  if (SAFE.unreserved(cp)) return 'unreserved';
+  if (GEN_DELIMS.has(cp)) return 'gen-delims';
+  if (SUB_DELIMS.has(cp)) return 'sub-delims';
+  return 'other';
+}
+function buildReference() {
+  const tb = $('#ref-rows');
+  const filter = $('#ref-filter').value.trim().toLowerCase();
+  const cat = $('#ref-cat').value;
+  tb.innerHTML = '';
+  const items = [];
+  for (let cp = 32; cp <= 126; cp++) items.push(String.fromCharCode(cp));
+  EXTRA_CHARS.forEach(c => items.push(c));
+
+  let shown = 0;
+  items.forEach(ch => {
+    const cp = ch.codePointAt(0);
+    const cls = cp < 128 ? charClass(cp) : 'other';
+    if (cat !== 'all' && cls !== cat) return;
+    const name = (LANG === 'tr' ? CHAR_NAMES_TR[cp] : CHAR_NAMES[cp]) ||
+                 (/[a-zA-Z0-9]/.test(ch) ? (LANG === 'tr' ? 'harf/rakam' : 'letter or digit') : 'U+' + cp.toString(16).toUpperCase().padStart(4, '0'));
+    if (filter && ch.toLowerCase() !== filter && name.toLowerCase().indexOf(filter) < 0 &&
+        ('u+' + cp.toString(16)).indexOf(filter) < 0) return;
+    shown++;
+    const tr = el('tr');
+    tr.appendChild(el('td', null, ch === ' ' ? '␣' : ch));
+    tr.appendChild(el('td', 'mono', 'U+' + cp.toString(16).toUpperCase().padStart(4, '0')));
+    tr.appendChild(el('td', null, name));
+    const tdc = el('td');
+    tdc.appendChild(el('span', 'chip ' + (cls === 'unreserved' ? 'chip-ok' : cls === 'other' ? '' : 'chip-warn'), cls));
+    tr.appendChild(tdc);
+    tr.appendChild(el('td', 'enc', pctEncode(ch, SAFE.component, false)));
+    tr.appendChild(el('td', 'enc', pctEncode(ch, SAFE.uri, false)));
+    tr.appendChild(el('td', 'enc', pctEncode(ch, SAFE.form, true)));
+    const allowed = [
+      cp < 128 && SAFE.path(cp),                       /* inside one path segment */
+      cp < 128 && SAFE.fragment(cp) && cp !== 35,      /* inside the query */
+      cp < 128 && SAFE.fragment(cp)                    /* after the # */
+    ];
+    allowed.forEach(ok => tr.appendChild(el('td', ok ? 'yes' : 'no', ok ? '✓' : '✕')));
+    tb.appendChild(tr);
+  });
+  if (!shown) {
+    const tr = el('tr', 'empty-row'); const td = el('td', null, t('ref.none')); td.colSpan = 10;
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+}
+
+/* ======================================================================
+   10. Tabs, samples, shared links, wiring
+   ====================================================================== */
+const TABS = ['codec', 'inspect', 'batch', 'request', 'convert', 'reference'];
+let activeTab = 'codec';
+
+function showTab(name) {
+  if (TABS.indexOf(name) < 0) name = 'codec';
+  activeTab = name;
+  TABS.forEach(id => {
+    $('#view-' + id).hidden = (id !== name);
+    $('#tab-' + id).setAttribute('aria-selected', String(id === name));
+  });
+  if (name === 'reference') buildReference();
+}
+
+const SAMPLES = {
+  codec: 'https://api.example.com/v2/search?q=kebap çorba&filter={"city":"İstanbul","open":true}&next=https://cdn.example.com/a b.png#top',
+  inspect: 'https://user:hunter2@API.Example.com:443/v2/../v2/ürünler/12 34?q=kebap%2520%C3%A7orba&tags=a&tags=b&token=sk_live_9f3c&empty=&next=https%3A%2F%2Fcdn.example.com%2Fa.png#bölüm-2',
+  batch: ['https://example.com/a b?x=1', 'https://xn--mnchen-3ya.de/straße', 'q=kebap+%C3%A7orba&page=2',
+          'https://EXAMPLE.com:443/./x/../y?b=2&a=1', 'Çorbacı Ali’nin 2. Şubesi'].join('\n'),
+  curl: "curl -X POST 'https://api.example.com/v2/orders?ref=web' \\\n  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.sig' \\\n  -H 'Content-Type: application/json' \\\n  --data-raw '{\"sku\":\"ABC-1\",\"qty\":2,\"note\":\"acele değil\"}'"
+};
+
+function encodeState() {
+  const s = {
+    t: activeTab,
+    c: { i: $('#codec-in').value.slice(0, 4000), s: codecScheme, d: codecDir },
+    u: $('#insp-in').value.slice(0, 4000),
+    b: { i: $('#batch-in').value.slice(0, 4000), o: $('#batch-op').value },
+    r: { m: $('#req-method').value, u: $('#req-url').value, h: reqHeaders, b: $('#req-body').value.slice(0, 4000), bt: $('#req-body-type').value, l: $('#req-lang').value }
+  };
+  return bytesToB64(TE.encode(JSON.stringify(s)), true);
+}
+function applyState(str) {
+  let s;
+  try { s = JSON.parse(bytesToText(b64ToBytes(str), { lossy: true }).value); } catch (e) { return false; }
+  if (!s || typeof s !== 'object') return false;
+  if (s.c) {
+    $('#codec-in').value = String(s.c.i || '');
+    if (SCHEMES[s.c.s]) codecScheme = s.c.s;
+    codecDir = s.c.d === 'decode' ? 'decode' : 'encode';
+  }
+  if (typeof s.u === 'string') $('#insp-in').value = s.u;
+  if (s.b) { $('#batch-in').value = String(s.b.i || ''); if (s.b.o) $('#batch-op').value = s.b.o; }
+  if (s.r) {
+    $('#req-method').value = s.r.m || 'GET';
+    $('#req-url').value = s.r.u || '';
+    reqHeaders = Array.isArray(s.r.h) ? s.r.h.filter(h => h && typeof h.name === 'string').map(h => ({ name: String(h.name), value: String(h.value == null ? '' : h.value) })) : [];
+    $('#req-body').value = String(s.r.b || '');
+    if (s.r.bt) $('#req-body-type').value = s.r.bt;
+    if (s.r.l) $('#req-lang').value = s.r.l;
+  }
+  showTab(s.t || 'codec');
+  return true;
+}
+
+function rebuildDynamic() {
+  buildSchemeGrid();
+  buildBatchOps();
+  renderHeaderRows();
+  cvGenerate();
+  $$('[data-dir]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === codecDir)));
+  runCodec();
+  runInspect();
+  renderSnippet();
+  buildOAuthUrl();
+  if (activeTab === 'reference') buildReference();
+}
+
+function bind() {
+  /* topbar */
+  $$('[data-lang-set]').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.langSet)));
+  $$('[data-theme-set]').forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themeSet)));
+  $('#btn-privacy').addEventListener('click', () => $('#dlg-privacy').showModal());
+  $('#btn-shortcuts').addEventListener('click', () => $('#dlg-shortcuts').showModal());
+  $$('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+  $('#btn-share').addEventListener('click', async () => {
+    const hash = '#s=' + encodeState();
+    const link = location.href.split('#')[0] + hash;
+    try { history.replaceState(null, '', hash); } catch (e) {}
+    await copy(link);
+    toast(t('toast.linkCopied'));
+  });
+
+  /* tabs */
+  TABS.forEach(id => $('#tab-' + id).addEventListener('click', () => showTab(id)));
+
+  /* codec */
+  $$('[data-dir]').forEach(b => b.addEventListener('click', () => {
+    codecDir = b.dataset.dir;
+    $$('[data-dir]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.dir === codecDir)));
+    runCodec();
+  }));
+  ['#codec-in', '#opt-deep', '#opt-lossy', '#opt-lines'].forEach(s => {
+    $(s).addEventListener('input', runCodec);
+    $(s).addEventListener('change', runCodec);
+  });
+  $('#btn-swap').addEventListener('click', () => {
+    const v = $('#codec-out').textContent;
+    if (!v) { toast(t('toast.nothing')); return; }
+    $('#codec-in').value = v;
+    codecDir = codecDir === 'encode' ? 'decode' : 'encode';
+    $$('[data-dir]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.dir === codecDir)));
+    runCodec();
+  });
+  $('#btn-sample').addEventListener('click', () => { $('#codec-in').value = SAMPLES.codec; runCodec(); });
+  $('#btn-codec-clear').addEventListener('click', () => { $('#codec-in').value = ''; runCodec(); $('#codec-in').focus(); });
+  $('#btn-codec-copy').addEventListener('click', () => copy($('#codec-out').textContent));
+
+  /* inspector */
+  $('#insp-in').addEventListener('input', () => runInspect());
+  $('#opt-plus').addEventListener('change', () => runInspect());
+  $('#cmp-in').addEventListener('input', runCompare);
+  $('#btn-insp-sample').addEventListener('click', () => { $('#insp-in').value = SAMPLES.inspect; runInspect(); });
+  $('#btn-insp-clear').addEventListener('click', () => { $('#insp-in').value = ''; runInspect(); $('#insp-in').focus(); });
+  $('#btn-insp-copy').addEventListener('click', () => copy(rebuiltUrl()));
+  $('#btn-insp-normalize').addEventListener('click', () => {
+    const before = $('#insp-in').value.trim();
+    if (!before) return;
+    const after = normalizeHref(before);
+    $('#insp-in').value = after;
+    runInspect();
+    status($('#insp-status'), after === before ? 'info' : 'ok', after === before ? t('insp.normalNoop') : t('insp.normalized'));
+  });
+  $('#btn-q-add').addEventListener('click', () => {
+    qParams.push({ name: 'new', value: '', rawName: 'new', rawValue: '', hasEq: true, broken: false });
+    onQueryEdited(true);
+  });
+  $('#btn-q-sort').addEventListener('click', () => {
+    qParams.sort((a, b) => a.name.localeCompare(b.name));
+    onQueryEdited(true);
+  });
+  $('#btn-q-json').addEventListener('click', () => {
+    const o = {};
+    qParams.forEach(p => {
+      if (p.name in o) { if (Array.isArray(o[p.name])) o[p.name].push(p.value); else o[p.name] = [o[p.name], p.value]; }
+      else o[p.name] = p.value;
+    });
+    copy(JSON.stringify(o, null, 2));
+  });
+  $('#btn-cmp-swap').addEventListener('click', () => {
+    const a = $('#insp-in').value; $('#insp-in').value = $('#cmp-in').value; $('#cmp-in').value = a;
+    runInspect();
+  });
+
+  /* batch */
+  $('#btn-batch-run').addEventListener('click', runBatch);
+  $('#batch-op').addEventListener('change', runBatch);
+  ['#batch-dedupe', '#batch-sort', '#batch-skipblank'].forEach(s => $(s).addEventListener('change', runBatch));
+  $('#batch-in').addEventListener('input', () => {
+    $('#batch-in-n').textContent = String($('#batch-in').value.split('\n').filter(l => !$('#batch-skipblank').checked || l.trim() !== '').length);
+  });
+  $('#btn-batch-sample').addEventListener('click', () => { $('#batch-in').value = SAMPLES.batch; runBatch(); });
+  $('#btn-batch-copy').addEventListener('click', () => copy($('#batch-out').textContent));
+  $('#btn-batch-dl').addEventListener('click', downloadBatch);
+
+  /* request forge */
+  ['#req-method', '#req-url', '#req-body', '#req-body-type', '#req-lang'].forEach(s => {
+    $(s).addEventListener('input', renderSnippet);
+    $(s).addEventListener('change', renderSnippet);
+  });
+  $('#btn-h-add').addEventListener('click', () => { reqHeaders.push({ name: '', value: '' }); renderHeaderRows(); });
+  $('#btn-curl-import').addEventListener('click', importCurl);
+  $('#btn-req-copy').addEventListener('click', () => copy(snippet(reqModel(), $('#req-lang').value)));
+  $('#btn-req-sample').addEventListener('click', () => { $('#curl-in').value = SAMPLES.curl; importCurl(); });
+  $('#btn-req-clear').addEventListener('click', () => {
+    $('#req-url').value = ''; $('#req-body').value = ''; $('#curl-in').value = '';
+    reqHeaders = []; renderHeaderRows(); renderSnippet(); status($('#req-status'), 'info', '');
+  });
+  $('#btn-body-pretty').addEventListener('click', () => {
+    const v = $('#req-body').value.trim();
+    if (!v) return;
+    try { $('#req-body').value = JSON.stringify(JSON.parse(v), null, 2); renderSnippet(); status($('#req-status'), 'ok', t('req.jsonTidied')); }
+    catch (e) { status($('#req-status'), 'danger', t('req.badJson', e.message)); }
+  });
+
+  /* oauth */
+  ['#oa-endpoint', '#oa-client', '#oa-redirect', '#oa-scope', '#oa-response', '#oa-state', '#oa-challenge']
+    .forEach(s => $(s).addEventListener('input', buildOAuthUrl));
+  $('#btn-pkce').addEventListener('click', makePkce);
+  $('#btn-oauth-copy').addEventListener('click', () => copy($('#oa-out').textContent));
+  $('#cb-in').addEventListener('input', readCallback);
+
+  /* convert */
+  $('#cv-text').addEventListener('input', () => cvSync('text'));
+  $('#cv-b64').addEventListener('input', () => cvSync('b64'));
+  $('#cv-b64u').addEventListener('input', () => cvSync('b64u'));
+  $('#cv-hex').addEventListener('input', () => cvSync('hex'));
+  $('#cv-qs').addEventListener('input', () => cvQuery('qs'));
+  $('#cv-json').addEventListener('input', () => cvQuery('json'));
+  $('#cv-q-plus').addEventListener('change', () => cvQuery('qs'));
+  $('#cv-epoch').addEventListener('input', () => cvTime('epoch'));
+  $('#cv-epochms').addEventListener('input', () => cvTime('epochms'));
+  $('#cv-iso').addEventListener('input', () => cvTime('iso'));
+  $('#btn-now').addEventListener('click', () => cvTime('now'));
+  ['#cv-hash-in', '#cv-hmac-key'].forEach(s => $(s).addEventListener('input', cvHash));
+  ['#cv-alg', '#cv-hash-out'].forEach(s => $(s).addEventListener('change', cvHash));
+  $('#btn-gen').addEventListener('click', cvGenerate);
+  $('#cv-slug-in').addEventListener('input', () => { $('#cv-slug-out').textContent = slugify($('#cv-slug-in').value); });
+  $('#cv-jwt').addEventListener('input', cvJwt);
+
+  /* reference */
+  $('#ref-filter').addEventListener('input', buildReference);
+  $('#ref-cat').addEventListener('change', buildReference);
+
+  /* keyboard */
+  document.addEventListener('keydown', e => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '');
+    if (e.key === '?' && !typing) { e.preventDefault(); $('#dlg-shortcuts').showModal(); return; }
+    if (!e.altKey || e.ctrlKey || e.metaKey) return;
+    const n = Number(e.key);
+    if (n >= 1 && n <= TABS.length) { e.preventDefault(); showTab(TABS[n - 1]); return; }
+    const k = e.key.toLowerCase();
+    if (k === 'e' || k === 'd') {
+      e.preventDefault(); showTab('codec');
+      codecDir = k === 'e' ? 'encode' : 'decode';
+      $$('[data-dir]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.dir === codecDir)));
+      runCodec();
+    } else if (k === 's') { e.preventDefault(); $('#btn-swap').click(); }
+    else if (k === 'c') { e.preventDefault(); if (activeTab === 'codec') $('#btn-codec-copy').click(); else if (activeTab === 'batch') $('#btn-batch-copy').click(); else if (activeTab === 'request') $('#btn-req-copy').click(); }
+    else if (k === 'x') {
+      e.preventDefault();
+      if (activeTab === 'codec') $('#btn-codec-clear').click();
+      else if (activeTab === 'inspect') $('#btn-insp-clear').click();
+      else if (activeTab === 'batch') { $('#batch-in').value = ''; runBatch(); }
+      else if (activeTab === 'request') $('#btn-req-clear').click();
+    }
+  });
+}
+
+/* ---- init ---- */
+function init() {
+  let savedTheme = 'system', savedLang = null;
+  try { savedTheme = localStorage.getItem('urlforge.theme') || 'system'; savedLang = localStorage.getItem('urlforge.lang'); } catch (e) {}
+  applyTheme(savedTheme);
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    let m = 'system'; try { m = localStorage.getItem('urlforge.theme') || 'system'; } catch (e) {}
+    if (m === 'system') applyTheme('system');
+  });
+
+  bind();
+  buildSchemeGrid();
+  buildBatchOps();
+  renderHeaderRows();
+  cvGenerate();
+  cvTime('now');
+
+  const lang = savedLang || (/^tr\b/i.test(navigator.language || '') ? 'tr' : 'en');
+  applyLang(lang);
+
+  let restored = false;
+  if (location.hash.startsWith('#s=')) restored = applyState(location.hash.slice(3));
+  if (restored) { rebuildDynamic(); toast(t('toast.restored')); }
+  else showTab('codec');
+
+  runCodec(); runInspect(); renderSnippet(); buildOAuthUrl();
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+})();
+</script>
+</body>
+</html>

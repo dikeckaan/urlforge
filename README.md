@@ -1,0 +1,102 @@
+# urlforge
+
+A single-file, offline toolkit for the encoding problems that fill an API developer's day:
+percent-encoding, query strings, Base64, punycode, curl commands and OAuth redirects — all
+decoded, inspected and rebuilt inside the browser.
+
+**Everything is one `index.html`.** No backend, no build step, no npm, no CDN, no external
+JavaScript, CSS or fonts, and no network requests of any kind. Save the file and open it
+directly — it works with networking switched off.
+
+Live: **https://kaandikec.com/urlforge/** · Interface in English and Turkish.
+
+## What it does
+
+### Encode & decode
+
+- Thirteen schemes side by side: `encodeURIComponent`, `encodeURI`, strict RFC 3986
+  (which also escapes `!'()*`), form data (`application/x-www-form-urlencoded`, space → `+`),
+  path segment, fragment, every-byte, Base64, Base64URL, `\xNN` hex escapes, `\uXXXX` unicode
+  escapes, HTML entities, and Punycode/IDN.
+- **A character-by-character map** of what the conversion did. Every rewritten character is
+  highlighted with what it became, so `ç → %C3%A7` and a stray space are visible at a glance
+  rather than buried in a wall of percent signs.
+- **Encoding layers.** Text that was encoded more than once is peeled apart pass by pass, with
+  the intermediate result shown at each step. Double-encoding is called out explicitly instead
+  of leaving you to notice the `%25`.
+- Precise, non-blocking errors: a broken percent escape reports its exact position and the
+  three characters that failed; invalid UTF-8 says where the byte run went wrong. Undecodable
+  bytes can be replaced with U+FFFD instead, on request.
+- Line-by-line mode, deep decoding, live byte and character counts, and a size delta.
+
+### URL inspector
+
+- Splits a URL into scheme, user info, host, port, path, query, fragment and origin, and shows
+  the punycode host in its unicode form when they differ.
+- **An editable query table.** Rename, retype, reorder by dragging, duplicate or delete
+  parameters and the URL above rebuilds itself. Raw and decoded values sit side by side, and
+  each row is annotated: double-encoded, repeated, empty, contains `+`, holds JSON, a URL or a JWT.
+- Path segments listed raw and decoded, one row per segment.
+- **Findings**, ranked by severity: credentials in the URL, secrets in the query string,
+  literal spaces, double-encoded values, non-ASCII hosts that need punycode, repeated
+  parameters and how frameworks disagree about them, dot segments, default ports, lower-case
+  percent escapes, over-long URLs, trailing characters from a bad copy-paste.
+- RFC 3986 normalisation: lower-case the scheme and host, drop the default port, resolve
+  `.` and `..`, upper-case percent escapes and decode the ones that never needed escaping.
+- Side-by-side comparison of two URLs, diffing both the parts and the parameters.
+
+### Batch
+
+Sixteen operations applied to every line: encode and decode in four flavours, decode until
+the text stops changing, normalise, keep only the host, origin or path, drop the query and
+fragment, query string to JSON, slugify, punycode. Optional deduplication and sorting;
+export as TXT, CSV or JSON.
+
+### Request forge
+
+- Build a request — method, URL, headers, body — and get the snippet in **curl, HTTPie,
+  JavaScript `fetch`, axios, Python `requests`, Go `net/http`, PowerShell or PHP curl**, each
+  quoted correctly for that language.
+- **Paste a curl command and the form fills itself.** Line continuations, single and double
+  quoting, `-X`, `-H`, `-d`/`--data-raw`, `--data-urlencode`, `-F`, `-u` (converted to a Basic
+  header), `-A`, `-e`, `-b` and `--url` are all understood; the body type is inferred from the
+  `Content-Type` or the body's own shape.
+- An OAuth 2.0 authorisation URL builder with a locally generated **PKCE pair** (`code_verifier`
+  plus its S256 `code_challenge`), and a callback reader that tells you whether a `code`, an
+  `error` or an implicit token came back, and lists every parameter.
+
+### Convert
+
+- Text ⇄ Base64 ⇄ Base64URL ⇄ hex, all four fields live and linked.
+- Query string ⇄ JSON, with repeated keys collapsed into arrays.
+- Unix seconds ⇄ milliseconds ⇄ ISO 8601 ⇄ local time.
+- SHA-1/256/384/512 and HMAC through the Web Crypto API, output as hex, Base64 or Base64URL.
+- UUID v4, random hex, random Base64URL, a short nonce, and a slug maker that handles Turkish
+  characters properly (`Çorbacı Ali'nin 2. şubesi` → `corbaci-ali-nin-2-subesi`).
+- A JWT peek that decodes the header and payload and renders `iat`, `nbf` and `exp` as dates.
+  It never checks signatures — [jwtforge](https://kaandikec.com/jwtforge/) does that.
+
+### Reference
+
+A searchable table of every printable ASCII character plus a few non-ASCII samples: its RFC 3986
+class (unreserved, gen-delims, sub-delims, other), what each encoding scheme turns it into, and
+whether it may appear literally in a path segment, a query or a fragment.
+
+## Privacy
+
+Nothing leaves the page. There are no analytics, no fonts, no CDN and no requests of any kind.
+Only the language and theme choice are stored, in this browser's local storage.
+
+"Copy workspace link" puts the current input into the link's fragment. Fragments are never sent
+to a server, but anyone holding the link can read it — treat a shared link like the data it carries.
+
+## Running it
+
+Open `index.html`. That is the whole thing.
+
+For GitHub Pages, the workflow in `.github/workflows/pages.yml` publishes the repository root
+on every push to `main`.
+
+## Licence
+
+MIT.
