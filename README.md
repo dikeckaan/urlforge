@@ -18,10 +18,13 @@ jargon — and every job links through to the full tool with whatever you had ty
 
 > Make a copied URL readable · Make a value safe for a URL · See and edit the query parameters ·
 > Check a URL for problems · Turn a curl command into code · Show what is inside Base64 or a JWT ·
-> Do the same thing to many lines · Timestamps, hashes and IDs
+> Do the same thing to many lines · Timestamps, hashes and IDs · Check a webhook signature ·
+> Why did the browser block my request?
 
-**Expert** is the six-tab workbench below, unchanged and one click away in the top bar. The
-choice is remembered.
+Paste anything into the box above the cards and urlforge picks the job for you. `⌘K` opens a
+command palette over every job, tool and setting.
+
+**Expert** is the nine-tab workbench below, one click away in the top bar. The choice is remembered.
 
 ## What it does
 
@@ -89,11 +92,52 @@ export as TXT, CSV or JSON.
 - A JWT peek that decodes the header and payload and renders `iat`, `nbf` and `exp` as dates.
   It never checks signatures — [jwtforge](https://kaandikec.com/jwtforge/) does that.
 
+### Sign
+
+Nothing on this tab leaves the page, which is the point: a signing secret has no business being
+pasted into a website that talks to a server.
+
+- **AWS Signature Version 4**, shown as working rather than as an answer: the canonical request,
+  the string to sign, each step of the signing-key derivation, and the finished `Authorization`
+  header — or a presigned URL, with `X-Amz-Expires` and the query-string form of the signature.
+  Handles session tokens, `UNSIGNED-PAYLOAD`, and the S3-versus-everything-else difference in
+  how the path is encoded, which is where most signature mismatches actually come from.
+  Verified against AWS's own `get-vanilla` test-suite vector and the presigned S3 example in the docs.
+- **Webhook signatures** for Stripe, GitHub, Shopify, Slack and plain HMAC. Paste the raw body,
+  the secret and the signature header; urlforge shows exactly what gets signed, what the signature
+  should be and what arrived. When it does not match it says what usually causes that — a trailing
+  newline your editor added, whitespace in the secret, or JSON that was parsed and re-serialised
+  before you copied it. "Load an example" mints a body and a matching signature so you can see a
+  passing case first.
+
+### Shapes
+
+The same JSON object written out the way nine different stacks write it — `qs`, PHP, Rails, Rack,
+Spring, ASP.NET Core, `URLSearchParams`, Go, `requests`, and the OpenAPI `form`, `deepObject`,
+`spaceDelimited` and `pipeDelimited` styles — side by side, so an interop argument can be settled by
+looking. The OpenAPI parameter-style table (`in: query` / `path` / `header`, each style and both
+`explode` values) is reproduced from the specification. Paste a query string in and it goes the
+other way: back to JSON, with a guess at which dialect wrote it.
+
+### HTTP
+
+- **CORS preflight.** Describe the request — origin, URL, method, whether it carries credentials,
+  which headers it sets — and paste what the server answered. You get a verdict and the rules one
+  by one: whether a preflight is even needed and why, whether the origin is echoed back exactly,
+  the `*`-with-credentials trap, missing `Allow-Methods` or `Allow-Headers`, `Max-Age`,
+  a missing `Vary: Origin`, and what JavaScript will actually be allowed to read.
+- **Set-Cookie.** Attributes decoded, lifetime worked out, and the usual mistakes called out:
+  `SameSite=None` without `Secure`, a session cookie with no `HttpOnly`, a `__Host-` name that
+  breaks its own rules, `Max-Age` and `Expires` fighting each other, and anything over 4 KB.
+
 ### Reference
 
 A searchable table of every printable ASCII character plus a few non-ASCII samples: its RFC 3986
 class (unreserved, gen-delims, sub-delims, other), what each encoding scheme turns it into, and
 whether it may appear literally in a path segment, a query or a fragment.
+
+The URL inspector also flags **mixed writing systems** in a hostname — the Cyrillic а in
+`аpple.com` — naming the odd characters and their code points.
 
 ## Privacy
 

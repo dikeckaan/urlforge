@@ -384,9 +384,41 @@ body[data-mode="simple"] main { max-width: 1060px; }
 .pairs dd { margin: 0; padding: 4px 0; font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
 .pairs dd.void { color: var(--text-muted); font-style: italic; font-family: var(--sans); }
 
+.startpaste { display: grid; gap: 6px; margin: 0 0 18px; }
+.startpaste textarea { font-family: var(--mono); font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.chips button {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+  padding: 5px 11px; border-radius: 999px; cursor: pointer;
+  background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-dim);
+  font-size: 12.5px;
+}
+.chips button:hover { background: var(--bg-hover); color: var(--text); border-color: var(--border-strong); }
+.chips button b { font-weight: 600; color: var(--text); }
+.chips button span { font-family: var(--mono); font-size: 11.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+#start-recent { margin-top: 20px; }
+
+#dlg-palette { width: min(620px, 94vw); }
+#pal-input {
+  width: 100%; padding: 15px 17px; font: 15px/1.4 var(--sans);
+  background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0;
+}
+#pal-input:focus-visible { outline: none; }
+.pal-list { max-height: min(60vh, 420px); overflow: auto; margin: 0; padding: 6px; }
+.pal-list li {
+  display: flex; align-items: center; gap: 11px; padding: 8px 11px;
+  border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px;
+}
+.pal-list li[aria-selected="true"] { background: var(--accent-soft); color: var(--accent-text); }
+.pal-list li svg { color: var(--text-muted); flex: none; }
+.pal-list li[aria-selected="true"] svg { color: var(--accent-text); }
+.pal-list li .pal-group { margin-left: auto; color: var(--text-muted); font-size: 11.5px; flex: none; }
+.pal-empty { padding: 22px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
 @media (max-width: 680px) {
   .taskgrid { grid-template-columns: minmax(0, 1fr); }
   .start-head h1 { font-size: 22px; }
+  .chips button span { max-width: 130px; }
 }
 
 /* ---- 9. Dialogs & toast ------------------------------------------------- */
@@ -503,8 +535,11 @@ footer a { color: var(--text-dim); }
 <nav class="tabs" role="tablist" aria-label="Tools">
   <button class="tab" role="tab" id="tab-codec"     aria-controls="view-codec"     aria-selected="true"  data-i18n="tab.codec">Encode &amp; decode</button>
   <button class="tab" role="tab" id="tab-inspect"   aria-controls="view-inspect"   aria-selected="false" data-i18n="tab.inspect">URL inspector</button>
+  <button class="tab" role="tab" id="tab-shapes"    aria-controls="view-shapes"    aria-selected="false" data-i18n="tab.shapes">Shapes</button>
   <button class="tab" role="tab" id="tab-batch"     aria-controls="view-batch"     aria-selected="false" data-i18n="tab.batch">Batch</button>
   <button class="tab" role="tab" id="tab-request"   aria-controls="view-request"   aria-selected="false" data-i18n="tab.request">Request forge</button>
+  <button class="tab" role="tab" id="tab-sign"      aria-controls="view-sign"      aria-selected="false" data-i18n="tab.sign">Sign</button>
+  <button class="tab" role="tab" id="tab-http"      aria-controls="view-http"      aria-selected="false" data-i18n="tab.http">HTTP</button>
   <button class="tab" role="tab" id="tab-convert"   aria-controls="view-convert"   aria-selected="false" data-i18n="tab.convert">Convert</button>
   <button class="tab" role="tab" id="tab-reference" aria-controls="view-reference" aria-selected="false" data-i18n="tab.reference">Reference</button>
 </nav>
@@ -516,7 +551,17 @@ footer a { color: var(--text-dim); }
     <h1 data-i18n="start.title">What do you need to do?</h1>
     <p data-i18n="start.lede">Pick a job and you get one box to paste into and one answer back. Everything runs in this tab — nothing is uploaded.</p>
   </div>
+  <div class="startpaste">
+    <label class="field-label" for="start-paste" data-i18n="start.paste">Or paste anything here and urlforge picks the job</label>
+    <textarea id="start-paste" rows="2" spellcheck="false" autocapitalize="off" autocorrect="off"
+      data-i18n-ph="start.pastePh" placeholder="a URL, an encoded value, Base64, a JWT, a curl command…"></textarea>
+    <div id="start-route"></div>
+  </div>
   <div class="taskgrid" id="taskgrid"></div>
+  <div id="start-recent" hidden>
+    <span class="field-label" data-i18n="start.recent">Where you left off</span>
+    <div class="chips" id="recent-chips"></div>
+  </div>
 </div>
 
 <div class="view" id="view-task" hidden>
@@ -873,6 +918,222 @@ footer a { color: var(--text-dim); }
   </div>
 </div>
 
+<!-- ================================ Sign ================================== -->
+<div class="view" id="view-sign" role="tabpanel" aria-labelledby="tab-sign" hidden>
+  <p class="lede" data-i18n="sign.lede">Keys and payloads stay in this tab. Nothing here reaches the network, which is the only sane way to work with a signing secret.</p>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="sig.title">AWS Signature Version 4</h2>
+      <div class="spacer"></div>
+      <label class="check"><input type="checkbox" id="sig-presign"><span data-i18n="sig.presign">Presigned URL</span></label>
+      <label class="check"><input type="checkbox" id="sig-s3"><span data-i18n="sig.s3">S3 (path encoded once)</span></label>
+      <button type="button" class="btn btn-sm" id="btn-sig-sample" data-i18n="codec.sample">Load an example</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-sig-copy" data-i18n="btn.copy">Copy</button>
+    </div>
+    <div class="panel-body">
+      <div class="row" style="flex-wrap:nowrap">
+        <select id="sig-method" style="width:120px" aria-label="Method">
+          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option>
+          <option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
+        </select>
+        <input type="text" id="sig-url" spellcheck="false" value="https://example.amazonaws.com/">
+      </div>
+      <div class="grid-4">
+        <label class="field"><span class="field-label" data-i18n="sig.region">Region</span><input type="text" id="sig-region" value="us-east-1" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sig.service">Service</span><input type="text" id="sig-service" value="service" spellcheck="false"></label>
+        <label class="field"><span class="field-label">Access key ID</span><input type="text" id="sig-akid" value="AKIDEXAMPLE" spellcheck="false"></label>
+        <label class="field"><span class="field-label">Secret access key</span><input type="text" id="sig-secret" value="wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY" spellcheck="false"></label>
+      </div>
+      <div class="grid-4">
+        <label class="field"><span class="field-label" data-i18n="sig.token">Session token (optional)</span><input type="text" id="sig-token" spellcheck="false"></label>
+        <label class="field"><span class="field-label">X-Amz-Date</span><input type="text" id="sig-date" value="20150830T123600Z" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sig.expires">Expires (seconds)</span><input type="text" id="sig-expires" value="3600" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="sig.unsigned">Payload hash</span>
+          <select id="sig-payload-mode">
+            <option value="body" data-i18n="sig.hashBody">Hash of the body</option>
+            <option value="unsigned">UNSIGNED-PAYLOAD</option>
+          </select></label>
+      </div>
+      <label class="field"><span class="field-label" data-i18n="sig.headers">Extra headers, one per line</span>
+        <textarea id="sig-headers" rows="3" spellcheck="false" placeholder="content-type: application/json"></textarea></label>
+      <label class="field"><span class="field-label" data-i18n="sig.body">Payload</span>
+        <textarea id="sig-body" rows="3" spellcheck="false"></textarea></label>
+      <div id="sig-status"></div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="panel-head"><h3 data-i18n="sig.canonical">Canonical request</h3>
+        <div class="spacer"></div>
+        <span class="chip" id="sig-canon-hash">—</span></div>
+      <div class="panel-body"><pre class="snippet" id="sig-canonical"></pre></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h3 data-i18n="sig.sts">String to sign</h3></div>
+      <div class="panel-body">
+        <pre class="snippet" id="sig-sts" style="max-height:150px"></pre>
+        <span class="field-label" data-i18n="sig.derivation">How the signing key is derived</span>
+        <dl class="kv" id="sig-keys" style="grid-template-columns:150px minmax(0,1fr)"></dl>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h3 id="sig-out-title" data-i18n="sig.authHeader">Authorization header</h3></div>
+    <div class="panel-body"><pre class="io-out" id="sig-out" style="min-height:0" data-empty="—"></pre></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="wh.title">Webhook signature</h2>
+      <div class="spacer"></div>
+      <select id="wh-provider" style="width:auto">
+        <option value="stripe">Stripe</option>
+        <option value="github">GitHub</option>
+        <option value="shopify">Shopify</option>
+        <option value="slack">Slack</option>
+        <option value="generic" data-i18n="wh.generic">Plain HMAC</option>
+      </select>
+      <button type="button" class="btn btn-sm" id="btn-wh-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <label class="field"><span class="field-label" data-i18n="wh.body">Raw body, byte for byte as it arrived</span>
+        <textarea id="wh-body" rows="5" spellcheck="false"></textarea></label>
+      <div class="grid-2">
+        <label class="field"><span class="field-label" data-i18n="wh.secret">Signing secret</span><input type="text" id="wh-secret" spellcheck="false"></label>
+        <label class="field"><span class="field-label" data-i18n="wh.sig">Signature header</span><input type="text" id="wh-sig" spellcheck="false"></label>
+      </div>
+      <div class="row" id="wh-generic-opts" hidden>
+        <label class="field" style="flex:1 1 140px"><span class="field-label" data-i18n="wh.alg">Algorithm</span>
+          <select id="wh-alg"><option>SHA-256</option><option>SHA-1</option><option>SHA-512</option></select></label>
+        <label class="field" style="flex:1 1 140px"><span class="field-label" data-i18n="wh.enc">Encoding</span>
+          <select id="wh-enc"><option value="hex" data-i18n="cv.hex">Hex</option><option value="b64">Base64</option></select></label>
+      </div>
+      <label class="field" id="wh-ts-wrap" hidden><span class="field-label" data-i18n="wh.ts">Request timestamp header</span>
+        <input type="text" id="wh-ts" spellcheck="false" placeholder="1700000000"></label>
+      <div id="wh-status"></div>
+      <dl class="kv" id="wh-detail" style="grid-template-columns:168px minmax(0,1fr)"></dl>
+    </div>
+  </section>
+</div>
+
+<!-- =============================== Shapes ================================= -->
+<div class="view" id="view-shapes" role="tabpanel" aria-labelledby="tab-shapes" hidden>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="shp.title">The data</h2>
+      <div class="spacer"></div>
+      <label class="check"><input type="checkbox" id="shp-decoded"><span data-i18n="shp.decoded">Show it decoded</span></label>
+      <button type="button" class="btn btn-sm" id="btn-shp-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <textarea id="shp-json" rows="7" spellcheck="false"
+        placeholder='{ "tags": ["a", "b"], "filter": { "city": "İstanbul" }, "page": 2 }'></textarea>
+      <div id="shp-status"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h3 data-i18n="shp.dialects">The same data, as each framework writes it</h3></div>
+    <div class="panel-body tight">
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th style="width:210px" data-i18n="shp.th.dialect">Framework</th>
+            <th data-i18n="shp.th.query">Query string</th>
+            <th style="width:58px"></th>
+          </tr></thead>
+          <tbody id="shp-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h3 data-i18n="shp.oas">OpenAPI parameter styles</h3>
+      <div class="spacer"></div>
+      <select id="shp-oas-in" style="width:auto">
+        <option value="query">in: query</option>
+        <option value="path">in: path</option>
+        <option value="header">in: header</option>
+      </select></div>
+    <div class="panel-body tight">
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th style="width:130px">style</th>
+            <th style="width:78px">explode</th>
+            <th style="width:20%" data-i18n="shp.th.primitive">Primitive</th>
+            <th style="width:30%" data-i18n="shp.th.array">Array</th>
+            <th data-i18n="shp.th.object">Object</th>
+          </tr></thead>
+          <tbody id="shp-oas-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h3 data-i18n="shp.read">Read a query string back</h3></div>
+    <div class="panel-body">
+      <textarea id="shp-qs" rows="3" spellcheck="false" placeholder="tags[]=a&amp;tags[]=b&amp;filter[city]=%C4%B0stanbul"></textarea>
+      <div id="shp-guess"></div>
+      <pre class="io-out" id="shp-parsed" style="min-height:0" data-empty="—"></pre>
+    </div>
+  </section>
+</div>
+
+<!-- ================================ HTTP ================================== -->
+<div class="view" id="view-http" role="tabpanel" aria-labelledby="tab-http" hidden>
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="cors.title">Will the browser allow this cross-origin request?</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-cors-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <div class="grid-2">
+        <div style="display:grid;gap:12px">
+          <label class="field"><span class="field-label" data-i18n="cors.origin">The page making the request (Origin)</span>
+            <input type="text" id="cors-origin" spellcheck="false" placeholder="https://app.example.com"></label>
+          <label class="field"><span class="field-label" data-i18n="cors.url">The URL it is asking for</span>
+            <input type="text" id="cors-url" spellcheck="false" placeholder="https://api.example.com/v2/orders"></label>
+          <div class="row" style="flex-wrap:nowrap">
+            <select id="cors-method" style="width:120px" aria-label="Method">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option>
+              <option>DELETE</option><option>HEAD</option><option>OPTIONS</option>
+            </select>
+            <label class="check"><input type="checkbox" id="cors-creds"><span data-i18n="cors.creds">Sends cookies or auth</span></label>
+          </div>
+          <label class="field"><span class="field-label" data-i18n="cors.reqHeaders">Request headers it sets</span>
+            <textarea id="cors-req-headers" rows="4" spellcheck="false" placeholder="content-type: application/json&#10;authorization: Bearer ..."></textarea></label>
+        </div>
+        <label class="field"><span class="field-label" data-i18n="cors.resHeaders">What the server answered with</span>
+          <textarea id="cors-res-headers" rows="12" spellcheck="false"
+            placeholder="access-control-allow-origin: https://app.example.com&#10;access-control-allow-methods: GET, POST&#10;access-control-allow-headers: content-type"></textarea></label>
+      </div>
+      <div id="cors-status"></div>
+      <div class="findings" id="cors-findings"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 data-i18n="cookie.title">Set-Cookie</h2>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-sm" id="btn-cookie-sample" data-i18n="codec.sample">Load an example</button>
+    </div>
+    <div class="panel-body">
+      <label class="field"><span class="field-label" data-i18n="cookie.in">One Set-Cookie header per line</span>
+        <textarea id="cookie-in" rows="4" spellcheck="false"
+          placeholder="session=abc123; Path=/; HttpOnly; Secure; SameSite=None"></textarea></label>
+      <div id="cookie-out"></div>
+    </div>
+  </section>
+</div>
+
 <!-- =============================== Convert ================================ -->
 <div class="view" id="view-convert" role="tabpanel" aria-labelledby="tab-convert" hidden>
 
@@ -1055,10 +1316,17 @@ footer a { color: var(--text-dim); }
       <kbd>Alt + S</kbd> <span data-i18n="sc.swap">Move the output back into the input</span>
       <kbd>Alt + C</kbd> <span data-i18n="sc.copy">Copy the output</span>
       <kbd>Alt + X</kbd> <span data-i18n="sc.clear">Clear the current tool</span>
+      <kbd>⌘K</kbd> <span data-i18n="sc.palette">Open the command palette</span>
       <kbd>Esc</kbd> <span data-i18n="sc.back">Back to the job list (simple mode)</span>
       <kbd>?</kbd> <span data-i18n="sc.help">Open this list</span>
     </div>
   </div>
+</dialog>
+
+<dialog id="dlg-palette" aria-label="Command palette">
+  <input type="text" id="pal-input" autocomplete="off" spellcheck="false"
+    data-i18n-ph="palette.ph" placeholder="Find a job or a tool">
+  <ul class="pal-list" id="pal-list" role="listbox"></ul>
 </dialog>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1082,6 +1350,110 @@ en: {
   'btn.share': 'Copy workspace link',
   'theme.light': 'Light', 'theme.dark': 'Dark', 'theme.system': 'System',
   'shortcuts.tip': 'Keyboard shortcuts',
+  'sign.lede': 'Keys and payloads stay in this tab. Nothing here reaches the network, which is the only sane way to work with a signing secret.',
+  'sig.title': 'AWS Signature Version 4',
+  'sig.presign': 'Presigned URL', 'sig.s3': 'S3 (path encoded once)',
+  'sig.region': 'Region', 'sig.service': 'Service', 'sig.token': 'Session token (optional)',
+  'sig.expires': 'Expires (seconds)', 'sig.unsigned': 'Payload hash', 'sig.hashBody': 'Hash of the body',
+  'sig.headers': 'Extra headers, one per line', 'sig.body': 'Payload',
+  'sig.canonical': 'Canonical request', 'sig.sts': 'String to sign',
+  'sig.derivation': 'How the signing key is derived',
+  'sig.authHeader': 'Authorization header', 'sig.presignedUrl': 'Presigned URL',
+  'sig.needUrl': 'Put a URL in and the signature builds itself.',
+  'sig.doubleEncoded': 'The path already contains escapes, so outside S3 they are encoded a second time \u2014 that is the rule, and it is where most mismatches come from.',
+  'sig.noDate': 'An <code>x-amz-date</code> header was not in your extra headers; the one above was used.',
+  'wh.title': 'Webhook signature', 'wh.generic': 'Plain HMAC',
+  'wh.body': 'Raw body, byte for byte as it arrived', 'wh.secret': 'Signing secret',
+  'wh.sig': 'Signature header', 'wh.alg': 'Algorithm', 'wh.enc': 'Encoding',
+  'wh.ts': 'Request timestamp header',
+  'wh.needAll': 'Fill in the body, the secret and the signature header.',
+  'wh.signedPayload': 'What gets signed', 'wh.computed': 'What it should be',
+  'wh.received': 'What arrived', 'wh.timestamp': 'Timestamp', 'wh.age': '{0} s ago',
+  'wh.match': 'The signature matches. This body really came from the sender holding that secret.',
+  'wh.noMatch': 'No match.',
+  'wh.hintNewline': 'Your body ends in a newline \u2014 an editor or a copy-paste often adds one, and it changes the signature.',
+  'wh.hintSecret': 'The secret has leading or trailing whitespace.',
+  'wh.hintStripe': 'No <code>t=</code> found in the header; Stripe signs <code>timestamp.body</code>, not the body alone.',
+  'wh.hintSlack': 'Slack signs <code>v0:timestamp:body</code>, so the timestamp header is required.',
+  'wh.hintReserialise': 'If this JSON was parsed and re-serialised before you pasted it, the bytes no longer match what was signed.',
+
+  'shp.title': 'The data', 'shp.decoded': 'Show it decoded',
+  'shp.dialects': 'The same data, as each framework writes it',
+  'shp.th.dialect': 'Framework', 'shp.th.query': 'Query string',
+  'shp.oas': 'OpenAPI parameter styles',
+  'shp.th.primitive': 'Primitive', 'shp.th.array': 'Array', 'shp.th.object': 'Object',
+  'shp.read': 'Read a query string back',
+  'shp.badJson': 'That is not valid JSON: {0}',
+  'shp.needObject': 'Give it a JSON object, not an array or a bare value.',
+  'shp.guess': 'This looks like: {0}',
+  'shp.guessNone': 'Flat keys, no nesting \u2014 every stack reads this the same way.',
+  'shp.g.rails': 'Rails / Rack brackets', 'shp.g.qs': 'qs or PHP indices',
+  'shp.g.deep': 'deepObject / nested brackets', 'shp.g.spring': 'Spring dot notation',
+  'shp.g.repeat': 'repeated keys', 'shp.g.comma': 'comma-joined values', 'shp.g.pipe': 'pipe-delimited',
+
+  'cors.title': 'Will the browser allow this cross-origin request?',
+  'cors.origin': 'The page making the request (Origin)', 'cors.url': 'The URL it is asking for',
+  'cors.creds': 'Sends cookies or auth', 'cors.reqHeaders': 'Request headers it sets',
+  'cors.resHeaders': 'What the server answered with',
+  'cors.needBoth': 'Fill in the origin and the URL.',
+  'cors.sameOrigin': 'Same origin \u2014 CORS does not apply at all here.',
+  'cors.isPreflight': 'The browser will send an <code>OPTIONS</code> preflight first, because {0}.',
+  'cors.isSimple': 'This is a simple request: no preflight, the browser sends it and checks the answer.',
+  'cors.why.method': 'the method is <code>{0}</code>',
+  'cors.why.headers': 'it sets <code>{0}</code>',
+  'cors.why.ct': 'the content type is <code>{0}</code>',
+  'cors.noAcao': 'No <code>Access-Control-Allow-Origin</code> in the answer. Without it nothing else matters.',
+  'cors.starWithCreds': '<code>Access-Control-Allow-Origin: *</code> cannot be used with credentials. Echo the exact origin back instead.',
+  'cors.acaoStar': '<code>Access-Control-Allow-Origin: *</code> lets any origin read the answer.',
+  'cors.acaoMismatch': '<code>Access-Control-Allow-Origin: {0}</code> does not match the origin <code>{1}</code>. It has to match byte for byte, with no trailing slash.',
+  'cors.acaoMatch': 'The origin is echoed back exactly: <code>{0}</code>.',
+  'cors.noAcac': 'Credentials are being sent but <code>Access-Control-Allow-Credentials: true</code> is missing.',
+  'cors.acac': '<code>Access-Control-Allow-Credentials: true</code> is present, so cookies will be sent and read.',
+  'cors.noAcam': 'The preflight answer has no <code>Access-Control-Allow-Methods</code>, so <code>{0}</code> is refused.',
+  'cors.acamOk': '<code>{0}</code> is in <code>Access-Control-Allow-Methods</code>.',
+  'cors.acamStar': '<code>Access-Control-Allow-Methods: *</code> covers <code>{0}</code>.',
+  'cors.acamStarCreds': '<code>Access-Control-Allow-Methods: *</code> is read literally when credentials are sent \u2014 list the method by name.',
+  'cors.acamMissing': '<code>{0}</code> is not in the allowed methods (<code>{1}</code>).',
+  'cors.acahStar': '<code>Access-Control-Allow-Headers: *</code> covers every header being sent.',
+  'cors.acahStarCreds': '<code>Access-Control-Allow-Headers: *</code> is read literally when credentials are sent \u2014 list each header by name.',
+  'cors.noAcah': 'No <code>Access-Control-Allow-Headers</code>, but the request sets <code>{0}</code>.',
+  'cors.acahMissing': 'These headers are not allowed: <code>{0}</code>.',
+  'cors.acahOk': 'Every non-safelisted header is allowed: <code>{0}</code>.',
+  'cors.maxAge': '<code>Access-Control-Max-Age: {0}</code> \u2014 the preflight is cached for that long.',
+  'cors.noMaxAge': 'No <code>Access-Control-Max-Age</code>, so every request pays for its own preflight.',
+  'cors.vary': 'The origin is echoed back but there is no <code>Vary: Origin</code>. A shared cache can hand one origin\u2019s answer to another.',
+  'cors.expose': 'JavaScript may read these response headers: <code>{0}</code>.',
+  'cors.noExpose': 'Without <code>Access-Control-Expose-Headers</code>, JavaScript only sees the seven safelisted response headers.',
+  'cors.blocked': 'The browser blocks this one.',
+  'cors.allowed': 'The browser lets this through.',
+
+  'cookie.title': 'Set-Cookie', 'cookie.in': 'One Set-Cookie header per line',
+  'cookie.value': 'Value', 'cookie.flags': 'Flags', 'cookie.until': 'Lives until',
+  'cookie.deleted': 'already expired, so this deletes the cookie',
+  'cookie.session': 'the end of the session',
+  'cookie.f.noneInsecure': '<strong>SameSite=None without Secure.</strong> Every current browser throws this cookie away.',
+  'cookie.f.noSameSite': 'No <code>SameSite</code>. Browsers now treat that as <code>Lax</code>, so it will not travel on cross-site POSTs.',
+  'cookie.f.noHttpOnly': '<strong>{0}</strong> looks like a session cookie but has no <code>HttpOnly</code>, so any script on the page can read it.',
+  'cookie.f.secPrefix': 'A <code>__Secure-</code> name requires the <code>Secure</code> attribute, or the cookie is rejected.',
+  'cookie.f.hostPrefix': 'A <code>__Host-</code> name requires <code>Secure</code>, <code>Path=/</code> and no <code>Domain</code>, or the cookie is rejected.',
+  'cookie.f.dotDomain': 'The leading dot in <code>Domain</code> has had no meaning since RFC 6265; it is simply dropped.',
+  'cookie.f.both': 'Both <code>Max-Age</code> and <code>Expires</code> are set. <code>Max-Age</code> wins.',
+  'cookie.f.tooBig': 'Over 4096 bytes. Browsers may refuse to store it.',
+  'cookie.f.noSecure': 'No <code>Secure</code>, so this cookie also travels over plain http.',
+  'cookie.f.clean': 'Nothing worth flagging.',
+  'start.paste': 'Or paste anything here and urlforge picks the job',
+  'start.pastePh': 'a URL, an encoded value, Base64, a JWT, a curl command\u2026',
+  'start.routed': 'That looks like a job for \u201c{0}\u201d.', 'start.open': 'Open it',
+  'start.recent': 'Where you left off',
+  'palette.ph': 'Find a job or a tool', 'palette.jobs': 'Job', 'palette.tools': 'Tool',
+  'palette.actions': 'Action', 'palette.none': 'Nothing matches that.',
+  'wh.provider': 'Who sent it',
+  'task.webhook.n': 'Check a webhook signature',
+  'task.webhook.d': 'Paste the body, the secret and the signature header. Stripe, GitHub, Shopify, Slack or a plain HMAC.',
+  'task.cors.n': 'Why did the browser block my request?',
+  'task.cors.d': 'Describe the request and paste the answer. You get a verdict and the exact rule that failed.',
+  'f.homograph': '<strong>Mixed writing systems in <code>{0}</code>.</strong> It combines {1}, which is how a look-alike domain passes for the real one. The odd characters: {2}',
+  'sc.palette': 'Open the command palette',
   'mode.simple': 'Simple', 'mode.expert': 'Expert',
   'start.title': 'What do you need to do?',
   'start.lede': 'Pick a job and you get one box to paste into and one answer back. Everything runs in this tab \u2014 nothing is uploaded.',
@@ -1136,6 +1508,7 @@ en: {
   'task.utils.gen': 'A fresh ID, every time you ask',
   'tab.codec': 'Encode & decode', 'tab.inspect': 'URL inspector', 'tab.batch': 'Batch',
   'tab.request': 'Request forge', 'tab.convert': 'Convert', 'tab.reference': 'Reference',
+  'tab.shapes': 'Shapes', 'tab.sign': 'Sign', 'tab.http': 'HTTP',
   'btn.clear': 'Clear', 'btn.copy': 'Copy', 'btn.copyOut': 'Copy output', 'btn.close': 'Close',
   'btn.remove': 'Remove',
   'toast.copied': 'Copied', 'toast.copyFailed': 'The browser refused to copy. Select the text instead.',
@@ -1317,6 +1690,110 @@ tr: {
   'btn.share': 'Çalışma bağlantısını kopyala',
   'theme.light': 'Açık', 'theme.dark': 'Koyu', 'theme.system': 'Sistem',
   'shortcuts.tip': 'Klavye kısayolları',
+  'sign.lede': 'Anahtarlar ve g\u00f6vdeler bu sekmede kal\u0131r. Buradan hi\u00e7bir \u015fey a\u011fa \u00e7\u0131kmaz; imza gizli anahtar\u0131yla \u00e7al\u0131\u015fman\u0131n tek makul yolu da bu.',
+  'sig.title': 'AWS Signature Version 4',
+  'sig.presign': '\u0130mzal\u0131 URL', 'sig.s3': 'S3 (yol bir kez kodlan\u0131r)',
+  'sig.region': 'B\u00f6lge', 'sig.service': 'Servis', 'sig.token': 'Oturum token\u2019\u0131 (iste\u011fe ba\u011fl\u0131)',
+  'sig.expires': 'Ge\u00e7erlilik (saniye)', 'sig.unsigned': 'G\u00f6vde \u00f6zeti', 'sig.hashBody': 'G\u00f6vdenin \u00f6zeti',
+  'sig.headers': 'Ek ba\u015fl\u0131klar, her sat\u0131ra bir tane', 'sig.body': 'G\u00f6vde',
+  'sig.canonical': 'Canonical request', 'sig.sts': 'String to sign',
+  'sig.derivation': '\u0130mza anahtar\u0131 nas\u0131l t\u00fcretiliyor',
+  'sig.authHeader': 'Authorization ba\u015fl\u0131\u011f\u0131', 'sig.presignedUrl': '\u0130mzal\u0131 URL',
+  'sig.needUrl': 'Bir URL girin, imza kendili\u011finden olu\u015fsun.',
+  'sig.doubleEncoded': 'Yolda zaten ka\u00e7\u0131\u015f dizileri var; S3 d\u0131\u015f\u0131nda bunlar ikinci kez kodlan\u0131r \u2014 kural bu ve uyu\u015fmazl\u0131klar\u0131n \u00e7o\u011fu buradan \u00e7\u0131kar.',
+  'sig.noDate': 'Ek ba\u015fl\u0131klar aras\u0131nda <code>x-amz-date</code> yoktu; yukar\u0131daki de\u011fer kullan\u0131ld\u0131.',
+  'wh.title': 'Webhook imzas\u0131', 'wh.generic': 'D\u00fcz HMAC',
+  'wh.body': 'Ham g\u00f6vde, geldi\u011fi gibi bayt bayt', 'wh.secret': '\u0130mza gizli anahtar\u0131',
+  'wh.sig': '\u0130mza ba\u015fl\u0131\u011f\u0131', 'wh.alg': 'Algoritma', 'wh.enc': 'Kodlama',
+  'wh.ts': '\u0130stek zaman damgas\u0131 ba\u015fl\u0131\u011f\u0131',
+  'wh.needAll': 'G\u00f6vdeyi, gizli anahtar\u0131 ve imza ba\u015fl\u0131\u011f\u0131n\u0131 doldurun.',
+  'wh.signedPayload': '\u0130mzalanan \u015fey', 'wh.computed': 'Olmas\u0131 gereken',
+  'wh.received': 'Gelen', 'wh.timestamp': 'Zaman damgas\u0131', 'wh.age': '{0} sn \u00f6nce',
+  'wh.match': '\u0130mza tutuyor. Bu g\u00f6vde ger\u00e7ekten o gizli anahtar\u0131 tutan taraftan gelmi\u015f.',
+  'wh.noMatch': 'Tutmuyor.',
+  'wh.hintNewline': 'G\u00f6vdeniz sat\u0131r sonuyla bitiyor \u2014 edit\u00f6r ya da kopyala-yap\u0131\u015ft\u0131r s\u0131k s\u0131k ekler ve imzay\u0131 de\u011fi\u015ftirir.',
+  'wh.hintSecret': 'Gizli anahtar\u0131n ba\u015f\u0131nda ya da sonunda bo\u015fluk var.',
+  'wh.hintStripe': 'Ba\u015fl\u0131kta <code>t=</code> bulunamad\u0131; Stripe g\u00f6vdeyi de\u011fil <code>zamandamgas\u0131.g\u00f6vde</code> dizgisini imzalar.',
+  'wh.hintSlack': 'Slack <code>v0:zamandamgas\u0131:g\u00f6vde</code> dizgisini imzalar, zaman damgas\u0131 ba\u015fl\u0131\u011f\u0131 \u015fart.',
+  'wh.hintReserialise': 'Bu JSON yap\u0131\u015ft\u0131rmadan \u00f6nce parse edilip yeniden yaz\u0131ld\u0131ysa baytlar imzalanan\u0131n ayn\u0131s\u0131 de\u011fildir.',
+
+  'shp.title': 'Veri', 'shp.decoded': '\u00c7\u00f6z\u00fclm\u00fc\u015f h\u00e2liyle g\u00f6ster',
+  'shp.dialects': 'Ayn\u0131 veri, her \u00e7at\u0131n\u0131n yazd\u0131\u011f\u0131 gibi',
+  'shp.th.dialect': '\u00c7at\u0131', 'shp.th.query': 'Sorgu dizgisi',
+  'shp.oas': 'OpenAPI parametre stilleri',
+  'shp.th.primitive': 'Tekil de\u011fer', 'shp.th.array': 'Dizi', 'shp.th.object': 'Nesne',
+  'shp.read': 'Bir sorgu dizgisini geri oku',
+  'shp.badJson': 'Bu ge\u00e7erli JSON de\u011fil: {0}',
+  'shp.needObject': 'Dizi ya da tek bir de\u011fer de\u011fil, bir JSON nesnesi verin.',
+  'shp.guess': 'Bu \u015funa benziyor: {0}',
+  'shp.guessNone': 'D\u00fcz anahtarlar, i\u00e7 i\u00e7e yap\u0131 yok \u2014 her \u00e7at\u0131 bunu ayn\u0131 okur.',
+  'shp.g.rails': 'Rails / Rack k\u00f6\u015feli parantez', 'shp.g.qs': 'qs ya da PHP indisleri',
+  'shp.g.deep': 'deepObject / i\u00e7 i\u00e7e parantez', 'shp.g.spring': 'Spring nokta g\u00f6sterimi',
+  'shp.g.repeat': 'tekrar eden anahtarlar', 'shp.g.comma': 'virg\u00fclle birle\u015ftirilmi\u015f de\u011ferler', 'shp.g.pipe': 'dikey \u00e7izgiyle ayr\u0131lm\u0131\u015f',
+
+  'cors.title': 'Taray\u0131c\u0131 bu \u00e7apraz k\u00f6kenli iste\u011fe izin verir mi?',
+  'cors.origin': '\u0130ste\u011fi yapan sayfa (Origin)', 'cors.url': '\u0130stedi\u011fi adres',
+  'cors.creds': '\u00c7erez ya da kimlik g\u00f6nderiyor', 'cors.reqHeaders': 'Koydu\u011fu istek ba\u015fl\u0131klar\u0131',
+  'cors.resHeaders': 'Sunucunun d\u00f6nd\u00fc\u011f\u00fc ba\u015fl\u0131klar',
+  'cors.needBoth': 'Origin ve adresi doldurun.',
+  'cors.sameOrigin': 'Ayn\u0131 k\u00f6ken \u2014 burada CORS hi\u00e7 devreye girmez.',
+  'cors.isPreflight': 'Taray\u0131c\u0131 \u00f6nce <code>OPTIONS</code> preflight g\u00f6nderecek, \u00e7\u00fcnk\u00fc {0}.',
+  'cors.isSimple': 'Bu basit bir istek: preflight yok, taray\u0131c\u0131 g\u00f6nderir ve cevab\u0131 denetler.',
+  'cors.why.method': 'metot <code>{0}</code>',
+  'cors.why.headers': '<code>{0}</code> ba\u015fl\u0131\u011f\u0131n\u0131 koyuyor',
+  'cors.why.ct': 'i\u00e7erik tipi <code>{0}</code>',
+  'cors.noAcao': 'Cevapta <code>Access-Control-Allow-Origin</code> yok. O olmadan geri kalan\u0131n\u0131n hi\u00e7 \u00f6nemi yok.',
+  'cors.starWithCreds': 'Kimlik g\u00f6nderilirken <code>Access-Control-Allow-Origin: *</code> kullan\u0131lamaz. Origin\u2019i aynen geri yaz\u0131n.',
+  'cors.acaoStar': '<code>Access-Control-Allow-Origin: *</code> her k\u00f6kenin cevab\u0131 okumas\u0131na izin verir.',
+  'cors.acaoMismatch': '<code>Access-Control-Allow-Origin: {0}</code>, <code>{1}</code> ile e\u015fle\u015fmiyor. Sondaki e\u011fik \u00e7izgi dahil bayt bayt ayn\u0131 olmal\u0131.',
+  'cors.acaoMatch': 'Origin aynen geri yaz\u0131lm\u0131\u015f: <code>{0}</code>.',
+  'cors.noAcac': 'Kimlik g\u00f6nderiliyor ama <code>Access-Control-Allow-Credentials: true</code> yok.',
+  'cors.acac': '<code>Access-Control-Allow-Credentials: true</code> var, \u00e7erezler gidip okunabilecek.',
+  'cors.noAcam': 'Preflight cevab\u0131nda <code>Access-Control-Allow-Methods</code> yok, dolay\u0131s\u0131yla <code>{0}</code> reddedilir.',
+  'cors.acamOk': '<code>{0}</code>, <code>Access-Control-Allow-Methods</code> i\u00e7inde.',
+  'cors.acamStar': '<code>Access-Control-Allow-Methods: *</code> <code>{0}</code> metodunu kaps\u0131yor.',
+  'cors.acamStarCreds': 'Kimlik g\u00f6nderilirken <code>Access-Control-Allow-Methods: *</code> d\u00fcz metin olarak okunur \u2014 metodu ad\u0131yla yaz\u0131n.',
+  'cors.acamMissing': '<code>{0}</code> izinli metotlar aras\u0131nda yok (<code>{1}</code>).',
+  'cors.acahStar': '<code>Access-Control-Allow-Headers: *</code> g\u00f6nderilen t\u00fcm ba\u015fl\u0131klar\u0131 kaps\u0131yor.',
+  'cors.acahStarCreds': 'Kimlik g\u00f6nderilirken <code>Access-Control-Allow-Headers: *</code> d\u00fcz metin olarak okunur \u2014 her ba\u015fl\u0131\u011f\u0131 ad\u0131yla yaz\u0131n.',
+  'cors.noAcah': '<code>Access-Control-Allow-Headers</code> yok ama istek <code>{0}</code> ba\u015fl\u0131\u011f\u0131n\u0131 koyuyor.',
+  'cors.acahMissing': '\u015eu ba\u015fl\u0131klara izin verilmemi\u015f: <code>{0}</code>.',
+  'cors.acahOk': 'G\u00fcvenli listede olmayan her ba\u015fl\u0131\u011fa izin var: <code>{0}</code>.',
+  'cors.maxAge': '<code>Access-Control-Max-Age: {0}</code> \u2014 preflight bu s\u00fcre boyunca \u00f6nbellekte.',
+  'cors.noMaxAge': '<code>Access-Control-Max-Age</code> yok, her istek kendi preflight\u2019inin bedelini \u00f6der.',
+  'cors.vary': 'Origin geri yaz\u0131l\u0131yor ama <code>Vary: Origin</code> yok. Ortak bir \u00f6nbellek bir k\u00f6kenin cevab\u0131n\u0131 ba\u015fkas\u0131na verebilir.',
+  'cors.expose': 'JavaScript \u015fu cevap ba\u015fl\u0131klar\u0131n\u0131 okuyabilir: <code>{0}</code>.',
+  'cors.noExpose': '<code>Access-Control-Expose-Headers</code> olmadan JavaScript yaln\u0131zca yedi g\u00fcvenli cevap ba\u015fl\u0131\u011f\u0131n\u0131 g\u00f6r\u00fcr.',
+  'cors.blocked': 'Taray\u0131c\u0131 bunu engeller.',
+  'cors.allowed': 'Taray\u0131c\u0131 buna izin verir.',
+
+  'cookie.title': 'Set-Cookie', 'cookie.in': 'Her sat\u0131ra bir Set-Cookie ba\u015fl\u0131\u011f\u0131',
+  'cookie.value': 'De\u011fer', 'cookie.flags': 'Bayraklar', 'cookie.until': 'Ge\u00e7erlilik',
+  'cookie.deleted': 's\u00fcresi ge\u00e7mi\u015f, yani bu \u00e7erezi siler',
+  'cookie.session': 'oturum sonuna kadar',
+  'cookie.f.noneInsecure': '<strong>Secure olmadan SameSite=None.</strong> G\u00fcncel her taray\u0131c\u0131 bu \u00e7erezi \u00e7\u00f6pe atar.',
+  'cookie.f.noSameSite': '<code>SameSite</code> yok. Taray\u0131c\u0131lar art\u0131k bunu <code>Lax</code> sayar, yani siteler aras\u0131 POST\u2019larda gitmez.',
+  'cookie.f.noHttpOnly': '<strong>{0}</strong> oturum \u00e7erezine benziyor ama <code>HttpOnly</code> yok; sayfadaki her betik okuyabilir.',
+  'cookie.f.secPrefix': '<code>__Secure-</code> \u00f6n ekli ad <code>Secure</code> ister, yoksa \u00e7erez reddedilir.',
+  'cookie.f.hostPrefix': '<code>__Host-</code> \u00f6n ekli ad <code>Secure</code>, <code>Path=/</code> ve <code>Domain</code> olmamas\u0131n\u0131 ister, yoksa \u00e7erez reddedilir.',
+  'cookie.f.dotDomain': '<code>Domain</code> ba\u015f\u0131ndaki nokta RFC 6265\u2019ten beri anlams\u0131z; sessizce at\u0131l\u0131r.',
+  'cookie.f.both': 'Hem <code>Max-Age</code> hem <code>Expires</code> var. <code>Max-Age</code> kazan\u0131r.',
+  'cookie.f.tooBig': '4096 bayt\u0131 ge\u00e7iyor. Taray\u0131c\u0131lar saklamay\u0131 reddedebilir.',
+  'cookie.f.noSecure': '<code>Secure</code> yok, bu \u00e7erez d\u00fcz http \u00fczerinden de gider.',
+  'cookie.f.clean': '\u0130\u015faretlenecek bir \u015fey yok.',
+  'start.paste': 'Ya da buraya bir \u015fey yap\u0131\u015ft\u0131r\u0131n, urlforge i\u015fi kendi se\u00e7sin',
+  'start.pastePh': 'bir adres, kodlanm\u0131\u015f bir de\u011fer, Base64, JWT, curl komutu\u2026',
+  'start.routed': 'Bu \u201c{0}\u201d i\u015fine benziyor.', 'start.open': 'A\u00e7',
+  'start.recent': 'Kald\u0131\u011f\u0131n\u0131z yer',
+  'palette.ph': 'Bir i\u015f ya da ara\u00e7 bulun', 'palette.jobs': '\u0130\u015f', 'palette.tools': 'Ara\u00e7',
+  'palette.actions': 'Eylem', 'palette.none': 'E\u015fle\u015fen bir \u015fey yok.',
+  'wh.provider': 'Kim g\u00f6nderdi',
+  'task.webhook.n': 'Webhook imzas\u0131n\u0131 do\u011frula',
+  'task.webhook.d': 'G\u00f6vdeyi, gizli anahtar\u0131 ve imza ba\u015fl\u0131\u011f\u0131n\u0131 yap\u0131\u015ft\u0131r\u0131n. Stripe, GitHub, Shopify, Slack ya da d\u00fcz HMAC.',
+  'task.cors.n': 'Taray\u0131c\u0131 iste\u011fimi neden engelledi?',
+  'task.cors.d': '\u0130ste\u011fi tarif edin, cevab\u0131 yap\u0131\u015ft\u0131r\u0131n. Karar\u0131 ve tak\u0131ld\u0131\u011f\u0131 kural\u0131 g\u00f6r\u00fcn.',
+  'f.homograph': '<strong><code>{0}</code> i\u00e7inde kar\u0131\u015f\u0131k yaz\u0131 sistemi.</strong> {1} bir arada kullan\u0131lm\u0131\u015f; benzer g\u00f6r\u00fcnen sahte alan adlar\u0131 tam olarak b\u00f6yle ge\u00e7er. Ayk\u0131r\u0131 karakterler: {2}',
+  'sc.palette': 'Komut paletini a\u00e7',
   'mode.simple': 'Basit', 'mode.expert': 'Uzman',
   'start.title': 'Ne yapmak istiyorsunuz?',
   'start.lede': 'Bir i\u015f se\u00e7in; yap\u0131\u015ft\u0131raca\u011f\u0131n\u0131z tek bir kutu ve tek bir cevap gelsin. Her \u015fey bu sekmede \u00e7al\u0131\u015f\u0131r \u2014 hi\u00e7bir \u015fey g\u00f6nderilmez.',
@@ -1371,6 +1848,7 @@ tr: {
   'task.utils.gen': 'Her istedi\u011finizde taze bir kimlik',
   'tab.codec': 'Kodla & çöz', 'tab.inspect': 'URL incele', 'tab.batch': 'Toplu işlem',
   'tab.request': 'İstek kur', 'tab.convert': 'Dönüştür', 'tab.reference': 'Başvuru',
+  'tab.shapes': 'Dizilim', 'tab.sign': 'İmza', 'tab.http': 'HTTP',
   'btn.clear': 'Temizle', 'btn.copy': 'Kopyala', 'btn.copyOut': 'Çıktıyı kopyala', 'btn.close': 'Kapat',
   'btn.remove': 'Sil',
   'toast.copied': 'Kopyalandı', 'toast.copyFailed': 'Tarayıcı kopyalamayı reddetti. Metni seçerek kopyalayın.',
@@ -2296,6 +2774,11 @@ function findings(u, raw, params) {
     add('warn', t('f.unicodeHost', safePuny(u.hostname, PUNY.toUnicode), safePuny(authority, PUNY.toASCII)));
   }
   if (u.hostname !== u.hostname.toLowerCase()) add('info', t('f.mixedCase'));
+  const mixed = mixedScriptLabels(safePuny(u.hostname, PUNY.toUnicode));
+  if (mixed.length) {
+    const m = mixed[0];
+    add('danger', t('f.homograph', m.label, m.scripts.join(' + '), m.odd.join(' ')));
+  }
 
   const defPorts = { 'http:': '80', 'https:': '443', 'ws:': '80', 'wss:': '443', 'ftp:': '21' };
   const rawPort = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*:(\d+)/i.exec(raw);
@@ -2324,6 +2807,40 @@ function findings(u, raw, params) {
   return out;
 }
 function safePuny(host, fn) { try { return fn(host); } catch (e) { return host; } }
+
+/* A label that mixes writing systems is how аpple.com gets away with it. */
+function scriptOf(cp) {
+  if ((cp >= 0x41 && cp <= 0x5A) || (cp >= 0x61 && cp <= 0x7A)) return 'Latin';
+  if (cp >= 0xC0 && cp <= 0x24F) return 'Latin';
+  if (cp >= 0x370 && cp <= 0x3FF) return 'Greek';
+  if (cp >= 0x400 && cp <= 0x52F) return 'Cyrillic';
+  if (cp >= 0x530 && cp <= 0x58F) return 'Armenian';
+  if (cp >= 0x590 && cp <= 0x5FF) return 'Hebrew';
+  if (cp >= 0x600 && cp <= 0x6FF) return 'Arabic';
+  if (cp >= 0x900 && cp <= 0x97F) return 'Devanagari';
+  if (cp >= 0x3040 && cp <= 0x30FF) return 'Kana';
+  if (cp >= 0x4E00 && cp <= 0x9FFF) return 'Han';
+  return null;
+}
+function mixedScriptLabels(host) {
+  const out = [];
+  String(host).split('.').forEach(label => {
+    const seen = {};
+    Array.from(label).forEach(ch => {
+      const sc = scriptOf(ch.codePointAt(0));
+      if (sc) (seen[sc] = seen[sc] || []).push(ch);
+    });
+    const scripts = Object.keys(seen);
+    if (scripts.length > 1) {
+      /* Name the rarest script's characters; those are the impostors. */
+      const rarest = scripts.slice().sort((a, b) => seen[a].length - seen[b].length)[0];
+      const odd = seen[rarest].filter((c, i, a) => a.indexOf(c) === i)
+        .map(c => c + ' (U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + ')');
+      out.push({ label: label, scripts: scripts, odd: odd });
+    }
+  });
+  return out;
+}
 
 function renderFindings(list) {
   const box = $('#insp-findings');
@@ -3079,7 +3596,7 @@ function buildReference() {
 /* ======================================================================
    10. Tabs, samples, shared links, wiring
    ====================================================================== */
-const TABS = ['codec', 'inspect', 'batch', 'request', 'convert', 'reference'];
+const TABS = ['codec', 'inspect', 'shapes', 'batch', 'request', 'sign', 'http', 'convert', 'reference'];
 let activeTab = 'codec';
 
 function showTab(name) {
@@ -3154,6 +3671,10 @@ function rebuildDynamic() {
   runInspect();
   renderSnippet();
   buildOAuthUrl();
+  runSigV4(); runWebhook();
+  runShapes(); runOasTable(); runShapeRead();
+  runCors(); runCookies();
+  renderRecents();
   if (activeTab === 'reference') buildReference();
 }
 
@@ -3294,6 +3815,81 @@ function bind() {
   $('#cv-slug-in').addEventListener('input', () => { $('#cv-slug-out').textContent = slugify($('#cv-slug-in').value); });
   $('#cv-jwt').addEventListener('input', cvJwt);
 
+  /* sign */
+  ['#sig-url', '#sig-region', '#sig-service', '#sig-akid', '#sig-secret', '#sig-token',
+   '#sig-date', '#sig-expires', '#sig-headers', '#sig-body'].forEach(x => $(x).addEventListener('input', runSigV4));
+  ['#sig-method', '#sig-payload-mode', '#sig-presign', '#sig-s3'].forEach(x => $(x).addEventListener('change', runSigV4));
+  $('#btn-sig-copy').addEventListener('click', () => copy($('#sig-out').textContent));
+  $('#btn-sig-sample').addEventListener('click', () => {
+    $('#sig-method').value = 'GET';
+    $('#sig-url').value = 'https://examplebucket.s3.amazonaws.com/test.txt';
+    $('#sig-region').value = 'us-east-1';
+    $('#sig-service').value = 's3';
+    $('#sig-akid').value = 'AKIAIOSFODNN7EXAMPLE';
+    $('#sig-secret').value = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
+    $('#sig-date').value = '20130524T000000Z';
+    $('#sig-expires').value = '86400';
+    $('#sig-token').value = '';
+    $('#sig-headers').value = '';
+    $('#sig-body').value = '';
+    $('#sig-presign').checked = true;
+    $('#sig-s3').checked = true;
+    runSigV4();
+  });
+  ['#wh-body', '#wh-secret', '#wh-sig', '#wh-ts'].forEach(x => $(x).addEventListener('input', runWebhook));
+  ['#wh-provider', '#wh-alg', '#wh-enc'].forEach(x => $(x).addEventListener('change', runWebhook));
+  $('#btn-wh-sample').addEventListener('click', async () => {
+    const ex = await makeWebhookSample($('#wh-provider').value);
+    $('#wh-body').value = ex.body; $('#wh-secret').value = ex.secret;
+    $('#wh-sig').value = ex.header; $('#wh-ts').value = ex.ts;
+    runWebhook();
+  });
+
+  /* shapes */
+  $('#shp-json').addEventListener('input', runShapes);
+  $('#shp-decoded').addEventListener('change', runShapes);
+  $('#shp-oas-in').addEventListener('change', runOasTable);
+  $('#shp-qs').addEventListener('input', runShapeRead);
+  $('#btn-shp-sample').addEventListener('click', () => {
+    $('#shp-json').value = JSON.stringify({ tags: ['a', 'b'], filter: { city: '\u0130stanbul', open: true }, page: 2 }, null, 2);
+    $('#shp-qs').value = 'tags[]=a&tags[]=b&filter[city]=%C4%B0stanbul&page=2';
+    runShapes(); runShapeRead();
+  });
+
+  /* http */
+  ['#cors-origin', '#cors-url', '#cors-req-headers', '#cors-res-headers'].forEach(x => $(x).addEventListener('input', runCors));
+  ['#cors-method', '#cors-creds'].forEach(x => $(x).addEventListener('change', runCors));
+  $('#btn-cors-sample').addEventListener('click', () => {
+    $('#cors-origin').value = 'https://app.example.com';
+    $('#cors-url').value = 'https://api.example.com/v2/orders';
+    $('#cors-method').value = 'POST';
+    $('#cors-creds').checked = true;
+    $('#cors-req-headers').value = 'content-type: application/json\nauthorization: Bearer eyJhbGciOiJIUzI1NiJ9';
+    $('#cors-res-headers').value = 'access-control-allow-origin: *\naccess-control-allow-methods: GET, POST';
+    runCors();
+  });
+  $('#cookie-in').addEventListener('input', runCookies);
+  $('#btn-cookie-sample').addEventListener('click', () => {
+    $('#cookie-in').value = [
+      'session=abc%20123; Path=/; HttpOnly; SameSite=None',
+      '__Host-csrf=9f3c; Path=/; Secure; SameSite=Strict',
+      'tracking=1; Domain=.example.com; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    ].join('\n');
+    runCookies();
+  });
+
+  /* start screen paste box and recents */
+  $('#start-paste').addEventListener('input', () => runStartPaste(false));
+  $('#start-paste').addEventListener('paste', () => setTimeout(() => runStartPaste(true), 0));
+
+  /* command palette */
+  $('#pal-input').addEventListener('input', () => renderPalette($('#pal-input').value));
+  $('#pal-input').addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); palIndex = Math.min(palIndex + 1, palItems.length - 1); markPalette(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); palIndex = Math.max(palIndex - 1, 0); markPalette(); }
+    else if (e.key === 'Enter') { e.preventDefault(); runPalette(palIndex); }
+  });
+
   /* reference */
   $('#ref-filter').addEventListener('input', buildReference);
   $('#ref-cat').addEventListener('change', buildReference);
@@ -3301,6 +3897,9 @@ function bind() {
   /* keyboard */
   document.addEventListener('keydown', e => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '');
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'k') {
+      e.preventDefault(); openPalette(); return;
+    }
     if (e.key === '?' && !typing) { e.preventDefault(); $('#dlg-shortcuts').showModal(); return; }
     if (e.key === 'Escape' && appMode === 'simple' && activeTask && !document.querySelector('dialog[open]')) {
       e.preventDefault(); closeTask(); return;
@@ -3328,6 +3927,599 @@ function bind() {
 }
 
 /* ======================================================================
+   10b. Signing — AWS SigV4 and webhook signatures
+   ====================================================================== */
+async function hmacBytes(keyBytes, msg, alg) {
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: alg || 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, typeof msg === 'string' ? TE.encode(msg) : msg);
+  return new Uint8Array(sig);
+}
+async function sha256Hex(data) {
+  const d = await crypto.subtle.digest('SHA-256', typeof data === 'string' ? TE.encode(data) : data);
+  return bytesToHexStr(new Uint8Array(d), '');
+}
+/* AWS wants RFC 3986 unreserved only, and is picky about the slash. */
+function awsEncode(str, encodeSlash) {
+  const bytes = TE.encode(String(str));
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i];
+    if (SAFE.unreserved(b)) out += String.fromCharCode(b);
+    else if (b === 47 && !encodeSlash) out += '/';
+    else out += '%' + hex2(b);
+  }
+  return out;
+}
+function parseHeaderLines(text) {
+  return String(text).split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const c = l.indexOf(':');
+    return c < 0 ? { name: l, value: '' } : { name: l.slice(0, c).trim(), value: l.slice(c + 1).trim() };
+  });
+}
+function amzNow() {
+  return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+async function runSigV4() {
+  const st = $('#sig-status');
+  const out = $('#sig-out');
+  if (!HAS_CRYPTO) { status(st, 'warn', t('cv.noCrypto')); return; }
+
+  const raw = $('#sig-url').value.trim();
+  if (!raw) { status(st, 'info', t('sig.needUrl')); $('#sig-canonical').textContent = ''; $('#sig-sts').textContent = ''; out.textContent = ''; $('#sig-keys').innerHTML = ''; return; }
+  let url;
+  try { url = new URL(raw); } catch (e) { status(st, 'danger', t('insp.invalid', e.message)); return; }
+
+  const presign = $('#sig-presign').checked;
+  const s3 = $('#sig-s3').checked;
+  const method = $('#sig-method').value;
+  const region = $('#sig-region').value.trim();
+  const service = $('#sig-service').value.trim();
+  const akid = $('#sig-akid').value.trim();
+  const secret = $('#sig-secret').value;
+  const token = $('#sig-token').value.trim();
+  const body = $('#sig-body').value;
+  const unsigned = $('#sig-payload-mode').value === 'unsigned' || presign;
+  let amzDate = $('#sig-date').value.trim();
+  if (!/^\d{8}T\d{6}Z$/.test(amzDate)) { amzDate = amzNow(); $('#sig-date').value = amzDate; }
+  const dateStamp = amzDate.slice(0, 8);
+  const scope = dateStamp + '/' + region + '/' + service + '/aws4_request';
+
+  /* headers */
+  const defPorts = { 'http:': '80', 'https:': '443' };
+  const host = url.hostname + (url.port && url.port !== defPorts[url.protocol] ? ':' + url.port : '');
+  const payloadHash = unsigned ? 'UNSIGNED-PAYLOAD' : await sha256Hex(body);
+
+  const headerMap = {};
+  headerMap['host'] = host;
+  if (!presign) {
+    headerMap['x-amz-date'] = amzDate;
+    if (token) headerMap['x-amz-security-token'] = token;
+    if (s3) headerMap['x-amz-content-sha256'] = payloadHash;
+  }
+  parseHeaderLines($('#sig-headers').value).forEach(h => {
+    if (h.name) headerMap[h.name.toLowerCase()] = h.value.replace(/\s+/g, ' ').trim();
+  });
+  const names = Object.keys(headerMap).sort();
+  const canonicalHeaders = names.map(n => n + ':' + headerMap[n] + '\n').join('');
+  const signedHeaders = names.join(';');
+
+  /* query */
+  const qParts = splitQuery(url.search, false).map(pp => [
+    awsEncode(pp.name, true), awsEncode(pp.hasEq ? pp.value : '', true)
+  ]);
+  if (presign) {
+    qParts.push(['X-Amz-Algorithm', 'AWS4-HMAC-SHA256']);
+    qParts.push(['X-Amz-Credential', awsEncode(akid + '/' + scope, true)]);
+    qParts.push(['X-Amz-Date', amzDate]);
+    qParts.push(['X-Amz-Expires', String(parseInt($('#sig-expires').value, 10) || 3600)]);
+    qParts.push(['X-Amz-SignedHeaders', awsEncode(signedHeaders, true)]);
+    if (token) qParts.push(['X-Amz-Security-Token', awsEncode(token, true)]);
+  }
+  qParts.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
+  const canonicalQuery = qParts.map(x => x[0] + '=' + x[1]).join('&');
+
+  /* path: S3 signs the path as it stands, everything else encodes it again */
+  const rawPath = url.pathname || '/';
+  const canonicalUri = s3 ? rawPath : awsEncode(rawPath, false);
+
+  const canonicalRequest = [method, canonicalUri, canonicalQuery, canonicalHeaders + '\n' + signedHeaders, payloadHash].join('\n');
+  const canonHash = await sha256Hex(canonicalRequest);
+  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, canonHash].join('\n');
+
+  const kDate = await hmacBytes(TE.encode('AWS4' + secret), dateStamp);
+  const kRegion = await hmacBytes(kDate, region);
+  const kService = await hmacBytes(kRegion, service);
+  const kSigning = await hmacBytes(kService, 'aws4_request');
+  const signature = bytesToHexStr(await hmacBytes(kSigning, stringToSign), '');
+
+  $('#sig-canonical').textContent = canonicalRequest;
+  $('#sig-canon-hash').textContent = canonHash.slice(0, 16) + '…';
+  $('#sig-sts').textContent = stringToSign;
+
+  const keys = $('#sig-keys');
+  keys.innerHTML = '';
+  [['kDate', 'HMAC("AWS4" + secret, "' + dateStamp + '")', kDate],
+   ['kRegion', 'HMAC(kDate, "' + region + '")', kRegion],
+   ['kService', 'HMAC(kRegion, "' + service + '")', kService],
+   ['kSigning', 'HMAC(kService, "aws4_request")', kSigning]].forEach(row => {
+    keys.appendChild(el('dt', null, row[0]));
+    const dd = el('dd');
+    dd.appendChild(el('div', null, row[1]));
+    const h = el('div', null, bytesToHexStr(row[2], ''));
+    h.style.color = 'var(--text-muted)'; h.style.fontSize = '11.5px';
+    dd.appendChild(h);
+    keys.appendChild(dd);
+  });
+  keys.appendChild(el('dt', null, 'signature'));
+  const sigDd = el('dd', null, signature);
+  sigDd.style.color = 'var(--accent-text)';
+  keys.appendChild(sigDd);
+
+  if (presign) {
+    $('#sig-out-title').textContent = t('sig.presignedUrl');
+    out.textContent = url.origin + canonicalUri + '?' + canonicalQuery + '&X-Amz-Signature=' + signature;
+  } else {
+    $('#sig-out-title').textContent = t('sig.authHeader');
+    out.textContent = 'Authorization: AWS4-HMAC-SHA256 Credential=' + akid + '/' + scope +
+      ', SignedHeaders=' + signedHeaders + ', Signature=' + signature;
+  }
+  const notes = [];
+  if (!s3 && /%[0-9a-fA-F]{2}/.test(rawPath)) notes.push(t('sig.doubleEncoded'));
+  if (!presign && !headerMap['x-amz-date']) notes.push(t('sig.noDate'));
+  status(st, notes.length ? 'warn' : 'ok', notes.join(' '));
+}
+
+const WH_PROVIDERS = {
+  stripe: { alg: 'SHA-256', enc: 'hex', ts: false },
+  github: { alg: 'SHA-256', enc: 'hex', ts: false },
+  shopify: { alg: 'SHA-256', enc: 'b64', ts: false },
+  slack: { alg: 'SHA-256', enc: 'hex', ts: true },
+  generic: { alg: 'SHA-256', enc: 'hex', ts: false }
+};
+function constantEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+async function webhookAnalyse(inp) {
+  const cfg = WH_PROVIDERS[inp.provider] || WH_PROVIDERS.generic;
+  if (!inp.body || !inp.secret || !inp.header) return { state: 'need', level: 'info', message: t('wh.needAll'), rows: [] };
+  if (!HAS_CRYPTO) return { state: 'error', level: 'warn', message: t('cv.noCrypto'), rows: [] };
+
+  const alg = inp.provider === 'generic' ? (inp.alg || 'SHA-256') : cfg.alg;
+  const enc = inp.provider === 'generic' ? (inp.enc || 'hex') : cfg.enc;
+
+  let signedPayload = inp.body, received = inp.header.trim(), timestamp = '';
+  if (inp.provider === 'stripe') {
+    const parts = {};
+    received.split(',').forEach(kv => { const i = kv.indexOf('='); if (i > 0) parts[kv.slice(0, i).trim()] = kv.slice(i + 1).trim(); });
+    timestamp = parts.t || '';
+    received = parts.v1 || '';
+    signedPayload = timestamp + '.' + inp.body;
+  } else if (inp.provider === 'github') {
+    received = received.replace(/^sha(256|1)=/i, '');
+  } else if (inp.provider === 'slack') {
+    timestamp = (inp.ts || '').trim();
+    received = received.replace(/^v0=/i, '');
+    signedPayload = 'v0:' + timestamp + ':' + inp.body;
+  }
+
+  const mac = await hmacBytes(TE.encode(inp.secret), signedPayload, alg);
+  const computed = enc === 'b64' ? bytesToB64(mac, false) : bytesToHexStr(mac, '');
+  const match = constantEqual(computed.toLowerCase(), received.toLowerCase());
+
+  const rows = [[t('wh.signedPayload'), signedPayload.length > 160 ? signedPayload.slice(0, 160) + ' …' : signedPayload],
+                [t('wh.computed'), computed],
+                [t('wh.received'), received || '—']];
+  if (timestamp) {
+    const age = Math.round(Date.now() / 1000 - Number(timestamp));
+    rows.push([t('wh.timestamp'), timestamp + '  —  ' + new Date(Number(timestamp) * 1000).toISOString() +
+      (Number.isFinite(age) ? '  (' + t('wh.age', age) + ')' : '')]);
+  }
+
+  if (match) return { state: 'match', level: 'ok', message: t('wh.match'), rows: rows };
+
+  const hints = [t('wh.noMatch')];
+  if (/\n$/.test(inp.body)) hints.push(t('wh.hintNewline'));
+  if (/^\s|\s$/.test(inp.secret)) hints.push(t('wh.hintSecret'));
+  if (inp.provider === 'stripe' && !timestamp) hints.push(t('wh.hintStripe'));
+  if (inp.provider === 'slack' && !timestamp) hints.push(t('wh.hintSlack'));
+  if (/^\s*[{[]/.test(inp.body)) hints.push(t('wh.hintReserialise'));
+  return { state: 'mismatch', level: 'danger', message: hints.join(' '), rows: rows };
+}
+
+async function runWebhook() {
+  const provider = $('#wh-provider').value;
+  const cfg = WH_PROVIDERS[provider] || WH_PROVIDERS.generic;
+  $('#wh-generic-opts').hidden = provider !== 'generic';
+  $('#wh-ts-wrap').hidden = !cfg.ts;
+
+  const r = await webhookAnalyse({
+    provider: provider, body: $('#wh-body').value, secret: $('#wh-secret').value,
+    header: $('#wh-sig').value, alg: $('#wh-alg').value, enc: $('#wh-enc').value, ts: $('#wh-ts').value
+  });
+  status($('#wh-status'), r.level, r.message);
+  const detail = $('#wh-detail');
+  detail.innerHTML = '';
+  r.rows.forEach(row => { detail.appendChild(el('dt', null, row[0])); detail.appendChild(el('dd', null, row[1])); });
+}
+
+/* Builds a body and a signature that really do match, so the example lands green. */
+async function makeWebhookSample(provider) {
+  const body = '{"id":"evt_1","type":"order.created","data":{"amount":4250,"note":"acele değil"}}';
+  const secret = 'whsec_' + bytesToB64(randomBytes(18), true);
+  const ts = String(Math.floor(Date.now() / 1000));
+  let payload = body, header = '', tsField = '';
+  if (provider === 'stripe') { payload = ts + '.' + body; }
+  else if (provider === 'slack') { payload = 'v0:' + ts + ':' + body; tsField = ts; }
+  const mac = await hmacBytes(TE.encode(secret), payload, 'SHA-256');
+  const hex = bytesToHexStr(mac, '');
+  if (provider === 'stripe') header = 't=' + ts + ',v1=' + hex;
+  else if (provider === 'github') header = 'sha256=' + hex;
+  else if (provider === 'shopify') header = bytesToB64(mac, false);
+  else if (provider === 'slack') header = 'v0=' + hex;
+  else header = hex;
+  return { body: body, secret: secret, header: header, ts: tsField };
+}
+
+/* ======================================================================
+   10c. Shapes — how the same data comes out in different stacks
+   ====================================================================== */
+const DIALECTS = [
+  { id: 'qs',       label: 'qs (Node) · PHP http_build_query', array: 'indices',  object: 'brackets' },
+  { id: 'rails',    label: 'Rails · Rack · qs brackets',   array: 'brackets', object: 'brackets' },
+  { id: 'spring',   label: 'Spring · ASP.NET Core',             array: 'repeat',   object: 'dots' },
+  { id: 'plain',    label: 'URLSearchParams · Go · requests', array: 'repeat', object: 'json', plus: true },
+  { id: 'oasT',     label: 'OpenAPI form, explode=true',            array: 'repeat',   object: 'explode' },
+  { id: 'oasF',     label: 'OpenAPI form, explode=false',           array: 'comma',    object: 'comma' },
+  { id: 'deep',     label: 'OpenAPI deepObject',                    array: 'repeat',   object: 'brackets' },
+  { id: 'space',    label: 'OpenAPI spaceDelimited',                array: 'space',    object: 'brackets' },
+  { id: 'pipe',     label: 'OpenAPI pipeDelimited',                 array: 'pipe',     object: 'brackets' }
+];
+
+function walkShape(prefix, val, out, d) {
+  if (Array.isArray(val)) {
+    if (d.array === 'indices') val.forEach((v, i) => walkShape(prefix + '[' + i + ']', v, out, d));
+    else if (d.array === 'brackets') val.forEach(v => walkShape(prefix + '[]', v, out, d));
+    else if (d.array === 'repeat') val.forEach(v => walkShape(prefix, v, out, d));
+    else if (d.array === 'comma') out.push([prefix, val.map(String).join(',')]);
+    else if (d.array === 'space') out.push([prefix, val.map(String).join(' ')]);
+    else if (d.array === 'pipe') out.push([prefix, val.map(String).join('|')]);
+    else out.push([prefix, JSON.stringify(val)]);
+    return;
+  }
+  if (val && typeof val === 'object') {
+    const keys = Object.keys(val);
+    if (d.object === 'comma') { out.push([prefix, keys.map(k => k + ',' + val[k]).join(',')]); return; }
+    if (d.object === 'json') { out.push([prefix, JSON.stringify(val)]); return; }
+    keys.forEach(k => {
+      const np = d.object === 'dots' ? prefix + '.' + k
+               : d.object === 'explode' ? k
+               : prefix + '[' + k + ']';
+      walkShape(np, val[k], out, d);
+    });
+    return;
+  }
+  out.push([prefix, val == null ? '' : String(val)]);
+}
+function shapeQuery(obj, d, decoded) {
+  const out = [];
+  Object.keys(obj).forEach(k => walkShape(k, obj[k], out, d));
+  if (decoded) return out.map(x => x[0] + '=' + x[1]).join('&');
+  const enc = str => pctEncode(String(str), d.plus ? SAFE.form : SAFE.component, !!d.plus);
+  return out.map(x => enc(x[0]) + '=' + enc(x[1])).join('&');
+}
+
+/* The OpenAPI specification's own style table, kept verbatim so it can be trusted. */
+const OAS_STYLES = {
+  query: [
+    ['form', 'true',  'id=5', 'id=3&id=4&id=5', 'role=admin&firstName=Alex'],
+    ['form', 'false', 'id=5', 'id=3,4,5', 'id=role,admin,firstName,Alex'],
+    ['spaceDelimited', 'true',  '—', 'id=3&id=4&id=5', '—'],
+    ['spaceDelimited', 'false', '—', 'id=3%204%205', 'id=role%20admin%20firstName%20Alex'],
+    ['pipeDelimited', 'true',  '—', 'id=3&id=4&id=5', '—'],
+    ['pipeDelimited', 'false', '—', 'id=3|4|5', 'id=role|admin|firstName|Alex'],
+    ['deepObject', 'true', '—', '—', 'id[role]=admin&id[firstName]=Alex']
+  ],
+  path: [
+    ['simple', 'false', '5', '3,4,5', 'role,admin,firstName,Alex'],
+    ['simple', 'true',  '5', '3,4,5', 'role=admin,firstName=Alex'],
+    ['label', 'false', '.5', '.3,4,5', '.role,admin,firstName,Alex'],
+    ['label', 'true',  '.5', '.3.4.5', '.role=admin.firstName=Alex'],
+    ['matrix', 'false', ';id=5', ';id=3,4,5', ';id=role,admin,firstName,Alex'],
+    ['matrix', 'true',  ';id=5', ';id=3;id=4;id=5', ';role=admin;firstName=Alex']
+  ],
+  header: [
+    ['simple', 'false', '5', '3,4,5', 'role,admin,firstName,Alex'],
+    ['simple', 'true',  '5', '3,4,5', 'role=admin,firstName=Alex']
+  ]
+};
+
+function runShapes() {
+  const st = $('#shp-status');
+  const tb = $('#shp-rows');
+  tb.innerHTML = '';
+  const raw = $('#shp-json').value.trim();
+  if (!raw) { status(st, 'info', ''); return; }
+  let obj;
+  try { obj = JSON.parse(raw); } catch (e) { status(st, 'danger', t('shp.badJson', e.message)); return; }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) { status(st, 'danger', t('shp.needObject')); return; }
+  status(st, 'ok', '');
+  const decoded = $('#shp-decoded').checked;
+  DIALECTS.forEach(d => {
+    const q = shapeQuery(obj, d, decoded);
+    const tr = el('tr');
+    tr.appendChild(el('td', null, d.label));
+    const td = el('td', 'mono', q);
+    td.style.overflowWrap = 'anywhere';
+    tr.appendChild(td);
+    const tdc = el('td');
+    const b = el('button', 'btn btn-sm', t('btn.copy')); b.type = 'button';
+    b.addEventListener('click', () => copy(q));
+    tdc.appendChild(b); tr.appendChild(tdc);
+    tb.appendChild(tr);
+  });
+}
+function runOasTable() {
+  const tb = $('#shp-oas-rows');
+  tb.innerHTML = '';
+  (OAS_STYLES[$('#shp-oas-in').value] || []).forEach(row => {
+    const tr = el('tr');
+    row.forEach((cell, i) => tr.appendChild(el('td', i >= 2 ? 'mono' : null, cell)));
+    tb.appendChild(tr);
+  });
+}
+
+/* Reading a query string back into structure, and naming the dialect it used. */
+function keyPath(key) {
+  const m = key.match(/^([^[\].]+)((\[[^\]]*\]|\.[^[\].]+)*)$/);
+  if (!m) return [key];
+  const path = [m[1]];
+  const rest = m[2] || '';
+  rest.replace(/\[([^\]]*)\]|\.([^[\].]+)/g, (all, a, b) => { path.push(a !== undefined ? a : b); return ''; });
+  return path;
+}
+function assignPath(root, path, value) {
+  let node = root;
+  for (let i = 0; i < path.length; i++) {
+    const k = path[i];
+    const last = i === path.length - 1;
+    if (k === '') {
+      if (!Array.isArray(node.__arr)) node.__arr = [];
+      node.__arr.push(value);
+      return;
+    }
+    if (last) {
+      if (node[k] === undefined) node[k] = value;
+      else if (Array.isArray(node[k])) node[k].push(value);
+      else node[k] = [node[k], value];
+    } else {
+      if (typeof node[k] !== 'object' || node[k] === null) node[k] = {};
+      node = node[k];
+    }
+  }
+}
+function tidyArrays(node) {
+  if (node === null || typeof node !== 'object') return node;
+  if (Array.isArray(node)) return node.map(tidyArrays);
+  if (Array.isArray(node.__arr)) return node.__arr;
+  const keys = Object.keys(node);
+  const allNumeric = keys.length > 0 && keys.every(k => /^\d+$/.test(k));
+  if (allNumeric) return keys.sort((a, b) => a - b).map(k => tidyArrays(node[k]));
+  const out = {};
+  keys.forEach(k => { out[k] = tidyArrays(node[k]); });
+  return out;
+}
+function guessDialect(pairs) {
+  const keys = pairs.map(p => p.name);
+  const notes = [];
+  if (keys.some(k => /\[\]$/.test(k))) notes.push('rails');
+  if (keys.some(k => /\[\d+\]/.test(k))) notes.push('qs');
+  if (keys.some(k => /\[[^\]\d][^\]]*\]/.test(k))) notes.push('deep');
+  if (keys.some(k => /\./.test(k))) notes.push('spring');
+  if (keys.length !== new Set(keys).size) notes.push('repeat');
+  if (pairs.some(p => /,/.test(p.value)) && !notes.length) notes.push('comma');
+  if (pairs.some(p => /\|/.test(p.rawValue))) notes.push('pipe');
+  return notes;
+}
+function runShapeRead() {
+  const box = $('#shp-guess');
+  const outPre = $('#shp-parsed');
+  const raw = $('#shp-qs').value.trim();
+  box.innerHTML = '';
+  if (!raw) { outPre.textContent = ''; return; }
+  const q = raw.indexOf('?') >= 0 ? raw.slice(raw.indexOf('?') + 1) : raw;
+  const pairs = splitQuery(q.split('#')[0], true);
+  if (!pairs.length) { outPre.textContent = ''; return; }
+  const root = {};
+  pairs.forEach(pp => assignPath(root, keyPath(pp.name), pp.value));
+  outPre.textContent = JSON.stringify(tidyArrays(root), null, 2);
+  const guess = guessDialect(pairs);
+  status(box, guess.length ? 'info' : 'info',
+    guess.length ? t('shp.guess', guess.map(g => t('shp.g.' + g)).join(', ')) : t('shp.guessNone'));
+}
+
+/* ======================================================================
+   10d. HTTP — CORS preflight and Set-Cookie
+   ====================================================================== */
+const CORS_SAFELIST = ['accept', 'accept-language', 'content-language', 'content-type', 'range'];
+const CORS_SAFE_CT = ['application/x-www-form-urlencoded', 'multipart/form-data', 'text/plain'];
+
+function corsAnalyse(inp) {
+  if (!inp.origin || !inp.target) return { state: 'need', level: 'info', message: t('cors.needBoth'), findings: [] };
+  let targetOrigin = '';
+  try { targetOrigin = new URL(inp.target).origin; }
+  catch (e) { return { state: 'error', level: 'danger', message: t('insp.invalid', e.message), findings: [] }; }
+  const origin = inp.origin.replace(/\/$/, '');
+  if (targetOrigin === origin) return { state: 'same', level: 'ok', message: t('cors.sameOrigin'), findings: [] };
+
+  const reqHeaders = parseHeaderLines(inp.reqHeaderText || '');
+  const res = {};
+  parseHeaderLines(inp.resHeaderText || '').forEach(h => { res[h.name.toLowerCase()] = h.value; });
+
+  const ctHeader = reqHeaders.find(h => h.name.toLowerCase() === 'content-type');
+  const ct = ctHeader ? ctHeader.value.split(';')[0].trim().toLowerCase() : '';
+  const nonSafe = reqHeaders.filter(h => CORS_SAFELIST.indexOf(h.name.toLowerCase()) < 0).map(h => h.name.toLowerCase());
+  const ctUnsafe = !!ct && CORS_SAFE_CT.indexOf(ct) < 0;
+  const method = inp.method;
+  const creds = !!inp.creds;
+  const preflight = ['GET', 'HEAD', 'POST'].indexOf(method) < 0 || nonSafe.length > 0 || ctUnsafe;
+
+  const out = [];
+  const ok = html => out.push({ level: 'ok', html: html });
+  const bad = html => out.push({ level: 'danger', html: html });
+  const info = html => out.push({ level: 'info', html: html });
+
+  info(preflight ? t('cors.isPreflight', preflightReason(method, nonSafe, ctUnsafe, ct)) : t('cors.isSimple'));
+
+  const acao = res['access-control-allow-origin'];
+  let blocked = false;
+  if (!acao) { bad(t('cors.noAcao')); blocked = true; }
+  else if (acao.trim() === '*') {
+    if (creds) { bad(t('cors.starWithCreds')); blocked = true; }
+    else ok(t('cors.acaoStar'));
+  } else if (acao.trim() !== origin) { bad(t('cors.acaoMismatch', acao.trim(), origin)); blocked = true; }
+  else ok(t('cors.acaoMatch', acao.trim()));
+
+  if (creds) {
+    if ((res['access-control-allow-credentials'] || '').toLowerCase() !== 'true') { bad(t('cors.noAcac')); blocked = true; }
+    else ok(t('cors.acac'));
+  }
+
+  if (preflight) {
+    const acam = (res['access-control-allow-methods'] || '').split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
+    if (!acam.length) { bad(t('cors.noAcam', method)); blocked = true; }
+    else if (acam.indexOf(method) >= 0) ok(t('cors.acamOk', method));
+    else if (acam.indexOf('*') >= 0 && !creds) ok(t('cors.acamStar', method));
+    else if (acam.indexOf('*') >= 0 && creds) { bad(t('cors.acamStarCreds')); blocked = true; }
+    else { bad(t('cors.acamMissing', method, acam.join(', '))); blocked = true; }
+
+    if (nonSafe.length || ctUnsafe) {
+      const acah = (res['access-control-allow-headers'] || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+      const needed = nonSafe.slice();
+      if (ctUnsafe && needed.indexOf('content-type') < 0) needed.push('content-type');
+      const missing = needed.filter(h => acah.indexOf(h) < 0);
+      if (acah.indexOf('*') >= 0 && creds) { bad(t('cors.acahStarCreds')); blocked = true; }
+      else if (acah.indexOf('*') >= 0) ok(t('cors.acahStar'));
+      else if (!acah.length) { bad(t('cors.noAcah', needed.join(', '))); blocked = true; }
+      else if (missing.length) { bad(t('cors.acahMissing', missing.join(', '))); blocked = true; }
+      else ok(t('cors.acahOk', needed.join(', ')));
+    }
+    const maxAge = res['access-control-max-age'];
+    info(maxAge ? t('cors.maxAge', maxAge) : t('cors.noMaxAge'));
+  }
+
+  if (acao && acao.trim() !== '*' && !/origin/i.test(res['vary'] || '')) info(t('cors.vary'));
+  if (res['access-control-expose-headers']) info(t('cors.expose', res['access-control-expose-headers']));
+  else info(t('cors.noExpose'));
+
+  return {
+    state: blocked ? 'blocked' : 'allowed',
+    level: blocked ? 'danger' : 'ok',
+    message: blocked ? t('cors.blocked') : t('cors.allowed'),
+    findings: out
+  };
+}
+
+function preflightReason(method, nonSafe, ctUnsafe, ct) {
+  if (['GET', 'HEAD', 'POST'].indexOf(method) < 0) return t('cors.why.method', method);
+  if (nonSafe.length) return t('cors.why.headers', nonSafe.join(', '));
+  if (ctUnsafe) return t('cors.why.ct', ct);
+  return '';
+}
+
+function runCors() {
+  const r = corsAnalyse({
+    origin: $('#cors-origin').value.trim(),
+    target: $('#cors-url').value.trim(),
+    method: $('#cors-method').value,
+    creds: $('#cors-creds').checked,
+    reqHeaderText: $('#cors-req-headers').value,
+    resHeaderText: $('#cors-res-headers').value
+  });
+  status($('#cors-status'), r.level, r.message);
+  renderFindingList($('#cors-findings'), r.findings);
+}
+
+const COOKIE_BOOL = ['secure', 'httponly', 'partitioned'];
+function runCookies() {
+  const box = $('#cookie-out');
+  box.innerHTML = '';
+  const lines = $('#cookie-in').value.split('\n').map(l => l.replace(/^set-cookie:\s*/i, '').trim()).filter(Boolean);
+  if (!lines.length) return;
+
+  lines.forEach(line => {
+    const parts = line.split(';');
+    const first = parts.shift() || '';
+    const eq = first.indexOf('=');
+    const name = eq < 0 ? first.trim() : first.slice(0, eq).trim();
+    const value = eq < 0 ? '' : first.slice(eq + 1).trim();
+    const attrs = {};
+    parts.forEach(pp => {
+      const i = pp.indexOf('=');
+      const k = (i < 0 ? pp : pp.slice(0, i)).trim().toLowerCase();
+      if (k) attrs[k] = i < 0 ? true : pp.slice(i + 1).trim();
+    });
+
+    const panel = el('section', 'panel');
+    panel.style.marginBottom = '12px';
+    const head = el('div', 'panel-head');
+    head.appendChild(el('h3', null, name || '—'));
+    head.appendChild(el('div', 'spacer'));
+    head.appendChild(el('span', 'chip', (TE.encode(line).length) + ' B'));
+    panel.appendChild(head);
+    const bodyEl = el('div', 'panel-body');
+
+    const dl = el('dl', 'kv');
+    dl.style.gridTemplateColumns = '150px minmax(0, 1fr)';
+    const addRow = (k, v) => { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v)); };
+    const dec = pctDecode(value, { plus: false, lossy: true });
+    addRow(t('cookie.value'), (dec.ok && dec.value !== value ? dec.value + '   ← ' + value : value) || '—');
+    ['domain', 'path', 'samesite', 'expires', 'max-age', 'priority'].forEach(k => {
+      if (attrs[k]) addRow(k, String(attrs[k]));
+    });
+    const flags = COOKIE_BOOL.filter(f => attrs[f]);
+    addRow(t('cookie.flags'), flags.length ? flags.join(' · ') : t('insp.none'));
+    if (attrs['max-age']) {
+      const n = Number(attrs['max-age']);
+      if (Number.isFinite(n)) addRow(t('cookie.until'), n <= 0 ? t('cookie.deleted') : new Date(Date.now() + n * 1000).toISOString());
+    } else if (attrs['expires']) {
+      const d = new Date(attrs['expires']);
+      if (!isNaN(d.getTime())) addRow(t('cookie.until'), d.toISOString() + (d < new Date() ? '   ← ' + t('cookie.deleted') : ''));
+    } else {
+      addRow(t('cookie.until'), t('cookie.session'));
+    }
+    bodyEl.appendChild(dl);
+
+    const f = [];
+    const sameSite = String(attrs['samesite'] || '').toLowerCase();
+    if (sameSite === 'none' && !attrs['secure']) f.push({ level: 'danger', html: t('cookie.f.noneInsecure') });
+    if (!sameSite) f.push({ level: 'warn', html: t('cookie.f.noSameSite') });
+    if (/^(session|sid|sess|auth|token|jwt|access_token|refresh_token|connect\.sid)/i.test(name) && !attrs['httponly']) {
+      f.push({ level: 'warn', html: t('cookie.f.noHttpOnly', name) });
+    }
+    if (/^__Secure-/.test(name) && !attrs['secure']) f.push({ level: 'danger', html: t('cookie.f.secPrefix') });
+    if (/^__Host-/.test(name) && (!attrs['secure'] || attrs['domain'] || String(attrs['path'] || '') !== '/')) {
+      f.push({ level: 'danger', html: t('cookie.f.hostPrefix') });
+    }
+    if (attrs['domain'] && String(attrs['domain']).charAt(0) === '.') f.push({ level: 'info', html: t('cookie.f.dotDomain') });
+    if (attrs['max-age'] && attrs['expires']) f.push({ level: 'info', html: t('cookie.f.both') });
+    if (TE.encode(line).length > 4096) f.push({ level: 'danger', html: t('cookie.f.tooBig') });
+    if (!attrs['secure'] && sameSite !== 'none') f.push({ level: 'info', html: t('cookie.f.noSecure') });
+    if (!f.length) f.push({ level: 'ok', html: t('cookie.f.clean') });
+
+    const fbox = el('div', 'findings');
+    fbox.style.marginTop = '12px';
+    renderFindingList(fbox, f);
+    bodyEl.appendChild(fbox);
+    panel.appendChild(bodyEl);
+    box.appendChild(panel);
+  });
+}
+
+/* ======================================================================
    11. Simple mode — one job, one box, one answer
    ====================================================================== */
 let appMode = 'simple';
@@ -3342,7 +4534,9 @@ const ICON = {
   terminal: ['M3 5.5h18v13H3z', 'M7 10l2.6 2.5L7 15M13 15.4h4.5'],
   braces:   ['M9.6 4.6c-2 0-1.8 2.9-1.8 4.3s-.6 2.6-2.1 3.1c1.5.5 2.1 1.7 2.1 3.1s-.2 4.3 1.8 4.3', 'M14.4 4.6c2 0 1.8 2.9 1.8 4.3s.6 2.6 2.1 3.1c-1.5.5-2.1 1.7-2.1 3.1s.2 4.3-1.8 4.3'],
   list:     ['M4 6.5h16M4 12h16M4 17.5h10'],
-  clock:    ['M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 0 0 0-17.2Z', 'M12 7.6V12l3 1.9']
+  clock:    ['M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 0 0 0-17.2Z', 'M12 7.6V12l3 1.9'],
+  shield:   ['M12 3.2 4.8 6v5.6c0 4.3 3 8.2 7.2 9.2 4.2-1 7.2-4.9 7.2-9.2V6L12 3.2Z', 'M9.2 11.9l2 2 3.6-3.8'],
+  globe:    ['M12 3.4a8.6 8.6 0 1 0 0 17.2 8.6 8.6 0 0 0 0-17.2Z', 'M3.6 12h16.8', 'M12 3.4c2.1 2.3 3.3 5.4 3.3 8.6s-1.2 6.3-3.3 8.6c-2.1-2.3-3.3-5.4-3.3-8.6s1.2-6.3 3.3-8.6Z']
 };
 function icon(paths, size) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -3388,7 +4582,8 @@ function renderFindingList(node, list) {
   list.forEach(f => {
     const row = el('div', 'finding');
     const dot = el('span', 'dot');
-    dot.style.background = f.level === 'danger' ? 'var(--danger)' : f.level === 'warn' ? 'var(--warn)' : 'var(--accent)';
+    dot.style.background = f.level === 'danger' ? 'var(--danger)' : f.level === 'warn' ? 'var(--warn)'
+                         : f.level === 'ok' ? 'var(--ok)' : 'var(--accent)';
     const b = el('div'); setNode(b, f.html);
     row.appendChild(dot); row.appendChild(b);
     node.appendChild(row);
@@ -3752,6 +4947,113 @@ function buildUtils(body) {
   return { primary: hIn, run: run, carry: () => ({ target: '#cv-hash-in', value: hIn.value }) };
 }
 
+/* ---- job: verify a webhook signature ---- */
+function buildWebhookJob(body) {
+  const row = el('div', 'row');
+  row.appendChild(el('span', 'field-label', t('wh.provider')));
+  const sel = el('select'); sel.style.width = 'auto';
+  [['stripe', 'Stripe'], ['github', 'GitHub'], ['shopify', 'Shopify'], ['slack', 'Slack'], ['generic', t('wh.generic')]]
+    .forEach(o => { const opt = el('option', null, o[1]); opt.value = o[0]; sel.appendChild(opt); });
+  row.appendChild(sel);
+  const sample = el('button', 'btn btn-sm', t('codec.sample')); sample.type = 'button';
+  row.appendChild(el('div', 'spacer')); row.appendChild(sample);
+
+  const inp = areaField('t-wh-body', 'wh.body', null, 5);
+  const grid = el('div', 'grid-2');
+  const secretL = el('label', 'field'); secretL.appendChild(el('span', 'field-label', t('wh.secret')));
+  const secret = el('input'); secret.type = 'text'; secret.spellcheck = false; secretL.appendChild(secret);
+  const sigL = el('label', 'field'); sigL.appendChild(el('span', 'field-label', t('wh.sig')));
+  const sig = el('input'); sig.type = 'text'; sig.spellcheck = false; sigL.appendChild(sig);
+  grid.appendChild(secretL); grid.appendChild(sigL);
+
+  const tsL = el('label', 'field'); tsL.hidden = true;
+  tsL.appendChild(el('span', 'field-label', t('wh.ts')));
+  const ts = el('input'); ts.type = 'text'; ts.spellcheck = false; tsL.appendChild(ts);
+
+  const st = el('div');
+  const detail = el('dl', 'kv');
+  detail.style.gridTemplateColumns = '168px minmax(0, 1fr)';
+  body.appendChild(row); body.appendChild(inp.wrap); body.appendChild(grid);
+  body.appendChild(tsL); body.appendChild(st); body.appendChild(detail);
+
+  const run = async () => {
+    tsL.hidden = sel.value !== 'slack';
+    const r = await webhookAnalyse({
+      provider: sel.value, body: inp.ta.value, secret: secret.value, header: sig.value, ts: ts.value
+    });
+    status(st, r.level, r.message);
+    detail.innerHTML = '';
+    r.rows.forEach(x => { detail.appendChild(el('dt', null, x[0])); detail.appendChild(el('dd', null, x[1])); });
+  };
+  [inp.ta, secret, sig, ts].forEach(n => n.addEventListener('input', run));
+  sel.addEventListener('change', run);
+  sample.addEventListener('click', async () => {
+    const ex = await makeWebhookSample(sel.value);
+    inp.ta.value = ex.body; secret.value = ex.secret; sig.value = ex.header; ts.value = ex.ts;
+    run();
+  });
+  return {
+    primary: inp.ta, run: run,
+    carry: () => ({ target: '#wh-body', value: inp.ta.value })
+  };
+}
+
+/* ---- job: why did the browser block this request ---- */
+function buildCorsJob(body) {
+  const mk = (labelKey, ph) => {
+    const l = el('label', 'field');
+    l.appendChild(el('span', 'field-label', t(labelKey)));
+    const i = el('input'); i.type = 'text'; i.spellcheck = false; if (ph) i.placeholder = ph;
+    l.appendChild(i);
+    return { wrap: l, node: i };
+  };
+  const origin = mk('cors.origin', 'https://app.example.com');
+  const target = mk('cors.url', 'https://api.example.com/v2/orders');
+  const g1 = el('div', 'grid-2'); g1.appendChild(origin.wrap); g1.appendChild(target.wrap);
+
+  const row = el('div', 'row');
+  const method = el('select'); method.style.width = '120px';
+  ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].forEach(m => method.appendChild(el('option', null, m)));
+  row.appendChild(method);
+  const credsL = el('label', 'check');
+  const creds = el('input'); creds.type = 'checkbox';
+  credsL.appendChild(creds); credsL.appendChild(el('span', null, t('cors.creds')));
+  row.appendChild(credsL);
+  const sample = el('button', 'btn btn-sm', t('codec.sample')); sample.type = 'button';
+  row.appendChild(el('div', 'spacer')); row.appendChild(sample);
+
+  const reqH = areaField('t-cors-req', 'cors.reqHeaders', null, 3);
+  const resH = areaField('t-cors-res', 'cors.resHeaders', null, 5);
+  const st = el('div');
+  const list = el('div', 'findings');
+  body.appendChild(g1); body.appendChild(row); body.appendChild(reqH.wrap);
+  body.appendChild(resH.wrap); body.appendChild(st); body.appendChild(list);
+
+  const run = () => {
+    const r = corsAnalyse({
+      origin: origin.node.value.trim(), target: target.node.value.trim(),
+      method: method.value, creds: creds.checked,
+      reqHeaderText: reqH.ta.value, resHeaderText: resH.ta.value
+    });
+    status(st, r.level, r.message);
+    renderFindingList(list, r.findings);
+  };
+  [origin.node, target.node, reqH.ta, resH.ta].forEach(n => n.addEventListener('input', run));
+  [method, creds].forEach(n => n.addEventListener('change', run));
+  sample.addEventListener('click', () => {
+    origin.node.value = 'https://app.example.com';
+    target.node.value = 'https://api.example.com/v2/orders';
+    method.value = 'POST'; creds.checked = true;
+    reqH.ta.value = 'content-type: application/json\nauthorization: Bearer eyJhbGciOiJIUzI1NiJ9';
+    resH.ta.value = 'access-control-allow-origin: *\naccess-control-allow-methods: GET, POST';
+    run();
+  });
+  return {
+    primary: target.node, run: run,
+    carry: () => ({ target: '#cors-url', value: target.node.value })
+  };
+}
+
 const TASKS = [
   { id: 'read',   icon: ICON.eye,      build: buildRead,       full: 'inspect' },
   { id: 'encode', icon: ICON.lock,     build: buildEncode,     full: 'codec' },
@@ -3760,7 +5062,9 @@ const TASKS = [
   { id: 'curl',   icon: ICON.terminal, build: buildCurlTask,   full: 'request' },
   { id: 'b64',    icon: ICON.braces,   build: buildB64,        full: 'convert' },
   { id: 'batch',  icon: ICON.list,     build: buildBatchTask,  full: 'batch' },
-  { id: 'utils',  icon: ICON.clock,    build: buildUtils,      full: 'convert' }
+  { id: 'utils',  icon: ICON.clock,    build: buildUtils,      full: 'convert' },
+  { id: 'webhook', icon: ICON.shield,  build: buildWebhookJob, full: 'sign' },
+  { id: 'cors',   icon: ICON.globe,    build: buildCorsJob,    full: 'http' }
 ];
 
 function renderTaskMenu() {
@@ -3779,6 +5083,7 @@ function renderTaskMenu() {
 function openTask(id, presetValue) {
   const task = TASKS.find(x => x.id === id);
   if (!task) { closeTask(); return; }
+  if (activeTask && activeTask !== id) rememberCurrentTask();
   activeTask = id;
   $('#task-title').textContent = t('task.' + id + '.n');
   $('#task-lede').textContent = t('task.' + id + '.d');
@@ -3794,6 +5099,7 @@ function openTask(id, presetValue) {
   window.scrollTo(0, 0);
 }
 function closeTask() {
+  rememberCurrentTask();
   activeTask = null; taskApi = null;
   $('#view-task').hidden = true;
   $('#view-start').hidden = false;
@@ -3803,6 +5109,7 @@ function openFullTool() {
   const task = TASKS.find(x => x.id === activeTask);
   if (!task) return;
   const carry = taskApi && taskApi.carry ? taskApi.carry() : null;
+  rememberCurrentTask();
   showMode('expert');
   showTab(task.full);
   if (carry && carry.value && $(carry.target)) {
@@ -3811,6 +5118,130 @@ function openFullTool() {
     else $(carry.target).dispatchEvent(new Event('input', { bubbles: true }));
   }
   window.scrollTo(0, 0);
+}
+
+/* ---- recents ---- */
+const RECENT_MAX = 8;
+function recentsLoad() {
+  try { return JSON.parse(localStorage.getItem('urlforge.recent') || '[]'); } catch (e) { return []; }
+}
+function pushRecent(taskId, value) {
+  const v = String(value || '').trim();
+  if (!v || v.length > 600) return;
+  let list = recentsLoad().filter(r => !(r.k === taskId && r.v === v));
+  list.unshift({ k: taskId, v: v, at: Date.now() });
+  list = list.slice(0, RECENT_MAX);
+  try { localStorage.setItem('urlforge.recent', JSON.stringify(list)); } catch (e) {}
+  renderRecents();
+}
+function renderRecents() {
+  const wrap = $('#start-recent');
+  const box = $('#recent-chips');
+  if (!wrap || !box) return;
+  const list = recentsLoad().filter(r => TASKS.some(x => x.id === r.k));
+  box.innerHTML = '';
+  wrap.hidden = !list.length;
+  list.forEach(r => {
+    const b = el('button'); b.type = 'button';
+    b.appendChild(el('b', null, t('task.' + r.k + '.n')));
+    b.appendChild(el('span', null, r.v.replace(/\s+/g, ' ')));
+    b.addEventListener('click', () => openTask(r.k, r.v));
+    box.appendChild(b);
+  });
+}
+function rememberCurrentTask() {
+  if (activeTask && taskApi && taskApi.primary) pushRecent(activeTask, taskApi.primary.value);
+}
+
+/* ---- paste routing ---- */
+function routePaste(v) {
+  const str = String(v).trim();
+  if (!str) return null;
+  if (/^curl(\.exe)?\s/i.test(str)) return 'curl';
+  if (str.split('\n').filter(x => x.trim()).length > 1) return 'batch';
+  const parts = str.split('.');
+  if ((parts.length === 3 || parts.length === 5) && /^[A-Za-z0-9_-]{8,}$/.test(parts[0])) return 'b64';
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(str)) {
+    if (/%[0-9a-fA-F]{2}/.test(str)) return 'read';
+    if (/[?&]/.test(str)) return 'params';
+    return 'check';
+  }
+  if (/^[A-Za-z0-9+/_-]{20,}={0,2}$/.test(str)) return 'b64';
+  if (/^[\w.[\]%+-]+=[^&]*(&|$)/.test(str)) return 'read';
+  return 'encode';
+}
+function runStartPaste(auto) {
+  const v = $('#start-paste').value;
+  const box = $('#start-route');
+  box.innerHTML = '';
+  const id = routePaste(v);
+  if (!id) return;
+  if (auto) { $('#start-paste').value = ''; openTask(id, v.trim()); return; }
+  const d = el('div', 'notice notice-info');
+  d.style.display = 'flex'; d.style.alignItems = 'center'; d.style.gap = '10px';
+  d.appendChild(el('span', null, t('start.routed', t('task.' + id + '.n'))));
+  const sp = el('div', 'spacer'); sp.style.flex = '1 1 auto'; d.appendChild(sp);
+  const go = el('button', 'btn btn-sm btn-primary', t('start.open')); go.type = 'button';
+  go.addEventListener('click', () => { $('#start-paste').value = ''; box.innerHTML = ''; openTask(id, v.trim()); });
+  d.appendChild(go);
+  box.appendChild(d);
+}
+
+/* ---- command palette ---- */
+let palItems = [], palIndex = 0;
+function buildPalette() {
+  const items = [];
+  TASKS.forEach(task => items.push({
+    icon: task.icon, label: t('task.' + task.id + '.n'), group: t('palette.jobs'),
+    run: () => { showMode('simple'); openTask(task.id); }
+  }));
+  TABS.forEach(id => items.push({
+    icon: ICON.list, label: t('tab.' + id), group: t('palette.tools'),
+    run: () => { showMode('expert'); showTab(id); }
+  }));
+  items.push({ icon: ICON.list, label: t('btn.share'), group: t('palette.actions'), run: () => $('#btn-share').click() });
+  items.push({ icon: ICON.list, label: t('theme.light'), group: t('palette.actions'), run: () => applyTheme('light') });
+  items.push({ icon: ICON.list, label: t('theme.dark'), group: t('palette.actions'), run: () => applyTheme('dark') });
+  items.push({ icon: ICON.list, label: t('theme.system'), group: t('palette.actions'), run: () => applyTheme('system') });
+  items.push({ icon: ICON.list, label: 'Turkce / English', group: t('palette.actions'), run: () => applyLang(LANG === 'tr' ? 'en' : 'tr') });
+  items.push({ icon: ICON.list, label: t('privacy.title'), group: t('palette.actions'), run: () => $('#dlg-privacy').showModal() });
+  items.push({ icon: ICON.list, label: t('shortcuts.title'), group: t('palette.actions'), run: () => $('#dlg-shortcuts').showModal() });
+  return items;
+}
+function renderPalette(filter) {
+  const list = $('#pal-list');
+  list.innerHTML = '';
+  const f = String(filter || '').trim().toLowerCase();
+  palItems = buildPalette().filter(it => !f || it.label.toLowerCase().indexOf(f) >= 0 || it.group.toLowerCase().indexOf(f) >= 0);
+  palIndex = 0;
+  if (!palItems.length) { list.appendChild(el('li', 'pal-empty', t('palette.none'))); return; }
+  palItems.forEach((it, i) => {
+    const li = el('li');
+    li.setAttribute('role', 'option');
+    li.setAttribute('aria-selected', String(i === 0));
+    li.appendChild(icon(it.icon, 16));
+    li.appendChild(el('span', null, it.label));
+    li.appendChild(el('span', 'pal-group', it.group));
+    li.addEventListener('mouseenter', () => { palIndex = i; markPalette(); });
+    li.addEventListener('click', () => runPalette(i));
+    list.appendChild(li);
+  });
+}
+function markPalette() {
+  Array.from($('#pal-list').children).forEach((li, i) => li.setAttribute('aria-selected', String(i === palIndex)));
+  const sel = $('#pal-list').children[palIndex];
+  if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest' });
+}
+function runPalette(i) {
+  const it = palItems[i];
+  $('#dlg-palette').close();
+  if (it) it.run();
+}
+function openPalette() {
+  $('#pal-input').value = '';
+  renderPalette('');
+  $('#dlg-palette').showModal();
+  $('#pal-input').focus();
 }
 
 function showMode(mode) {
@@ -3860,6 +5291,7 @@ function init() {
   else { showTab('codec'); showMode(savedMode); }
 
   runCodec(); runInspect(); renderSnippet(); buildOAuthUrl();
+  runOasTable(); runSigV4(); renderRecents();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
