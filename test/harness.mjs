@@ -12,6 +12,9 @@ export function suite(title) {
         results.push({ name, ok: false, detail: e.message });
       }
     },
+    skip(name, detail) {
+      results.push({ name, ok: true, skipped: true, detail: detail || '' });
+    },
     async checkAsync(name, fn) {
       try {
         const detail = await fn();
@@ -43,14 +46,15 @@ export function includes(haystack, needle, what) {
 }
 
 export function report(suites) {
-  let pass = 0, fail = 0;
+  let pass = 0, fail = 0, skip = 0;
   for (const s of suites) {
     console.log(`\n── ${s.title}`);
     for (const r of s.results) {
-      if (r.ok) { pass++; console.log(`   ok    ${r.name}${r.detail ? '  — ' + r.detail : ''}`); }
+      if (r.skipped) { skip++; console.log(`   skip  ${r.name}${r.detail ? '  — ' + r.detail : ''}`); }
+      else if (r.ok) { pass++; console.log(`   ok    ${r.name}${r.detail ? '  — ' + r.detail : ''}`); }
       else { fail++; console.log(`   FAIL  ${r.name}\n         ${r.detail}`); }
     }
   }
-  console.log(`\n${pass} passed, ${fail} failed\n`);
+  console.log(`\n${pass} passed, ${fail} failed${skip ? `, ${skip} skipped` : ''}\n`);
   return fail;
 }

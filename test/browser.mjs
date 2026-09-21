@@ -199,11 +199,36 @@ export async function browserChecks(page, errors) {
     return await $('#har-status');
   });
 
-  /* ---- QR both ways ---- */
-  await s.checkAsync('a generated QR reads back through the browser', async () => {
+  /* ---- QR both ways ----
+     BarcodeDetector is not shipped on every platform (Linux Chrome, for one),
+     so verify the round trip where it exists and the fallback where it does not. */
+  const hasDetector = await page.evaluate(() => typeof window.BarcodeDetector === 'function');
+
+  await s.checkAsync('a QR code is drawn at the right version', async () => {
     await click('#tab-convert');
     await set('#qr-in', 'https://kaandikec.com/urlforge/#suite');
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(150);
+    ok(await page.$eval('#qr-canvas', c => c.width) > 0, 'nothing was drawn');
+    return includes(await $('#qr-status'), 'modules');
+  });
+
+  if (!hasDetector) {
+    s.skip('a generated QR reads back through the browser', 'this browser has no BarcodeDetector');
+    await s.checkAsync('a missing QR reader is reported, not hidden', async () => {
+      const said = await page.evaluate(async () => {
+        const c = document.querySelector('#qr-canvas');
+        const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+        const f = new File([blob], 'qr.png', { type: 'image/png' });
+        const dt = new DataTransfer(); dt.items.add(f);
+        const input = document.querySelector('#qr-file');
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        await new Promise(r => setTimeout(r, 500));
+        return document.querySelector('#qr-read-status').textContent;
+      });
+      return includes(said, 'no built-in barcode reader');
+    });
+  } else await s.checkAsync('a generated QR reads back through the browser', async () => {
     const value = await page.evaluate(async () => {
       const c = document.querySelector('#qr-canvas');
       const blob = await new Promise(r => c.toBlob(r, 'image/png'));
